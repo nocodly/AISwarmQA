@@ -1,0 +1,15 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "tests/fixtures/sites/*"
+  - "tests/smoke"
+allowBuilds:
+  '@prisma/engines': true
+  esbuild: true
+  msgpackr-extract: true
+  prisma: true
+  sharp: true
+minimumReleaseAgeExclude:
+  - '@anthropic-ai/sdk@0.113.0'
+overrides:
+  signal-exit: 3.0.7

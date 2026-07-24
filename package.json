@@ -1,0 +1,39 @@
+{
+  "name": "ai-swarm-qa",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AI Swarm QA foundation monorepo.",
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter @ai-swarm-qa/web dev",
+    "dev:fixture": "pnpm --filter @ai-swarm-qa/broken-demo-site dev",
+    "dev:infra": "docker compose up -d",
+    "dev:web": "pnpm --filter @ai-swarm-qa/web dev",
+    "dev:worker": "pnpm --filter @ai-swarm-qa/worker dev",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm --filter @ai-swarm-qa/database db:generate",
+    "db:migrate": "pnpm --filter @ai-swarm-qa/database db:migrate",
+    "smoke:audit": "pnpm --filter @ai-swarm-qa/smoke-tests smoke",
+    "smoke:planner": "pnpm --filter @ai-swarm-qa/smoke-tests smoke:planner",
+    "smoke:planner:fallback": "pnpm --filter @ai-swarm-qa/smoke-tests smoke:planner:fallback",
+    "smoke:planner:anthropic": "pnpm --filter @ai-swarm-qa/smoke-tests smoke:planner:anthropic",
+    "smoke:anthropic": "pnpm --filter @ai-swarm-qa/smoke-tests smoke:anthropic",
+    "smoke:browser-agent": "pnpm --filter @ai-swarm-qa/smoke-tests smoke:browser-agent",
+    "smoke:browser-agent:anthropic": "pnpm --filter @ai-swarm-qa/smoke-tests smoke:browser-agent:anthropic",
+    "smoke:browser-agent:safety": "pnpm --filter @ai-swarm-qa/smoke-tests smoke:browser-agent:safety",
+    "smoke:swarm": "pnpm --filter @ai-swarm-qa/smoke-tests smoke:swarm",
+    "smoke:swarm:anthropic": "pnpm --filter @ai-swarm-qa/smoke-tests smoke:swarm:anthropic",
+    "smoke:swarm:safety": "pnpm --filter @ai-swarm-qa/smoke-tests smoke:swarm:safety",
+    "smoke:swarm:budget": "pnpm --filter @ai-swarm-qa/smoke-tests smoke:swarm:budget",
+    "worker:dev": "pnpm --filter @ai-swarm-qa/worker dev"
+  },
+  "devDependencies": {
+    "@types/node": "26.1.1",
+    "eslint": "10.7.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

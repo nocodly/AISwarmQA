@@ -1,0 +1,31 @@
+{
+  "name": "@ai-swarm-qa/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@ai-swarm-qa/config": "workspace:*",
+    "@ai-swarm-qa/database": "workspace:*",
+    "@ai-swarm-qa/queue": "workspace:*",
+    "@ai-swarm-qa/shared": "workspace:*",
+    "lucide-react": "1.25.0",
+    "next": "16.2.11",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "26.1.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

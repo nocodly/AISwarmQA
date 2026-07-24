@@ -1,0 +1,31 @@
+{
+  "name": "@ai-swarm-qa/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@ai-swarm-qa/ai": "workspace:*",
+    "@ai-swarm-qa/config": "workspace:*",
+    "@ai-swarm-qa/database": "workspace:*",
+    "@ai-swarm-qa/queue": "workspace:*",
+    "@ai-swarm-qa/shared": "workspace:*",
+    "axe-core": "4.12.1",
+    "bullmq": "5.80.10",
+    "playwright": "1.61.1",
+    "tsx": "4.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.1.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

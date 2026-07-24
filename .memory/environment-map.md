@@ -1,0 +1,41 @@
+# Environment Map
+
+- `DATABASE_URL`: PostgreSQL connection. Default local port is `55432`.
+- `REDIS_URL`: BullMQ Redis connection.
+- `APP_URL`: web app base URL.
+- `AUDIT_DEV_ALLOWED_HOSTS`: comma-separated local fixture hosts allowed in development.
+- `AUDIT_ARTIFACTS_DIR`: local screenshot/evidence artifact directory.
+- `WORKER_CONCURRENCY`: BullMQ worker concurrency.
+- `MISSION_WORKER_CONCURRENCY`: Phase 2 mission worker concurrency.
+- `AUDIT_MAX_PARALLEL_MISSIONS`: planning budget placeholder for parallel mission limits.
+- `MISSION_DEFAULT_TIMEOUT_MS`: default mission timeout.
+- `MISSION_MAX_LINKS`: link tester cap.
+- `MISSION_MAX_INTERACTIONS`: safe interaction tester cap.
+- `MISSION_MAX_PAGES`: future crawler cap.
+- `ACCESSIBILITY_SCAN_ENABLED`: deterministic accessibility mission flag.
+- `INTERACTION_TESTING_ENABLED`: deterministic interaction mission flag.
+- `AUDIT_MAX_STEPS`: audit budget placeholder.
+- `AUDIT_MAX_COST`: cost budget placeholder.
+- `AI_PROVIDER`: `mock` by default; `anthropic` enables real Anthropic calls through `packages/ai`.
+- `ANTHROPIC_API_KEY`: Anthropic API key read only from process environment. Never commit or log it.
+- `ANTHROPIC_MODEL`: default Anthropic model for Browser Agent and swarm role agents.
+- `AI_PROVIDER_MAX_ATTEMPTS`, `AI_PROVIDER_INITIAL_BACKOFF_MS`, `AI_PROVIDER_TIMEOUT_MS`, `AI_PROVIDER_FALLBACK_TO_MOCK`: provider retry, timeout, and fallback controls.
+- `AUDIT_PLANNING_MODE`: `deterministic` by default; `ai-assisted` enables planner flow.
+- `ANTHROPIC_PLANNER_MODEL`: optional planner model override when real provider mode is enabled.
+- `PLANNER_AI_ENABLED`: must be `true` before AI-assisted provider calls are attempted.
+- `PLANNER_TIMEOUT_MS`, `PLANNER_MAX_ATTEMPTS`, `PLANNER_MAX_INPUT_TOKENS`, `PLANNER_MAX_OUTPUT_TOKENS`, `PLANNER_MAX_ESTIMATED_COST_USD`: planner budget controls.
+- `PLANNER_MAX_PROPOSED_MISSIONS`, `PLANNER_MAX_PRIORITY_ROUTES`, `PLANNER_MAX_PAGE_TEXT_CHARS`, `PLANNER_MAX_LINKS_IN_CONTEXT`, `PLANNER_MAX_FORMS_IN_CONTEXT`: planner context and policy limits.
+- `PLANNER_MOCK_SCENARIO`: local/CI mock planner scenario such as `success` or `timeout`.
+- `AUTONOMOUS_BROWSER_MODE`: `disabled` by default; `mock` enables the optional `autonomous-browser` mission.
+- `AUTONOMOUS_MOCK_SCENARIO`: Browser Agent mock scenario such as `success`, `safety-sequence`, `external-navigation`, `unsafe-click`, or `provider-timeout`.
+- `AUTONOMOUS_MAX_STEPS`, `AUTONOMOUS_MAX_PROVIDER_CALLS`, `AUTONOMOUS_MAX_NAVIGATIONS`, `AUTONOMOUS_MAX_CLICKS`, `AUTONOMOUS_MAX_FORM_FILLS`, `AUTONOMOUS_MAX_SCREENSHOTS`: Browser Agent hard resource budgets.
+- `AUTONOMOUS_MISSION_TIMEOUT_MS`, `AUTONOMOUS_STEP_TIMEOUT_MS`, `AUTONOMOUS_IDLE_WAIT_MS`: Browser Agent time controls.
+- `AUTONOMOUS_MAX_INPUT_TOKENS`, `AUTONOMOUS_MAX_OUTPUT_TOKENS`, `AUTONOMOUS_MAX_ESTIMATED_COST_USD`: Browser Agent provider cost controls.
+- `AUTONOMOUS_MAX_DOM_ELEMENTS`, `AUTONOMOUS_MAX_VISIBLE_TEXT_CHARS`, `AUTONOMOUS_MAX_HISTORY_STEPS_IN_CONTEXT`: Browser Agent context bounds.
+- `AUTONOMOUS_MAX_CONSECUTIVE_REJECTIONS`, `AUTONOMOUS_MAX_NO_PROGRESS_STEPS`: Browser Agent stopping conditions.
+- `AUTONOMOUS_ALLOW_FORM_FILL`, `AUTONOMOUS_ALLOW_SAFE_FORM_SUBMIT`, `AUTONOMOUS_ALLOW_EXTERNAL_NAVIGATION`: Browser Agent policy flags. External navigation remains false in Phase 4.
+- `SWARM_MODE`: `disabled` by default; `mock` enables the optional `browser-swarm` mission.
+- `SWARM_MOCK_SCENARIO`: swarm mock scenario such as `success`, `unsafe-agent`, `step-budget`, `cost-budget`, or `orchestrator-cancel`.
+- `SWARM_MAX_AGENTS`, `SWARM_MAX_CONCURRENT_AGENTS`: swarm role count and concurrency controls.
+- `SWARM_MAX_TOTAL_STEPS`, `SWARM_MAX_PROVIDER_CALLS`, `SWARM_MAX_NAVIGATIONS`, `SWARM_MAX_SCREENSHOTS`: aggregate swarm execution budgets.
+- `SWARM_MAX_INPUT_TOKENS`, `SWARM_MAX_OUTPUT_TOKENS`, `SWARM_MAX_ESTIMATED_COST_USD`, `SWARM_TIMEOUT_MS`: aggregate swarm provider/cost/time budgets.

@@ -1,0 +1,391 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PRO
+  TEAM
+  ENTERPRISE
+}
+
+enum AuditStatus {
+  CREATED
+  VALIDATING
+  QUEUED
+  PLANNING
+  RUNNING
+  ANALYZING
+  GENERATING_REPORT
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum MissionStatus {
+  CREATED
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  SKIPPED
+}
+
+enum BrowserSessionStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum FindingSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum FindingCategory {
+  FUNCTIONAL
+  ACCESSIBILITY
+  PERFORMANCE
+  UX
+  SECURITY
+  NETWORK
+  CONSOLE
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships OrganizationMember[]
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members  OrganizationMember[]
+  projects Project[]
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  organizationId String
+  userId         String
+  role           String
+  createdAt      DateTime     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+}
+
+model Project {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  targetUrl      String
+  verifiedAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  audits       Audit[]
+}
+
+model Audit {
+  id            String      @id @default(cuid())
+  projectId     String
+  targetUrl     String
+  status        AuditStatus @default(CREATED)
+  correlationId String
+  maxSteps      Int
+  maxCostUsd    Decimal
+  queuedAt      DateTime?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  failedAt      DateTime?
+  failureReason String?
+  actualCost    Decimal     @default(0)
+  browserDurationMs Int?
+  executionSummary Json?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  missions Mission[]
+  findings Finding[]
+  report   Report?
+  plan     AuditPlan?
+  browserAgentRuns BrowserAgentRun[]
+  browserSwarmRuns BrowserSwarmRun[]
+}
+
+model AuditPlan {
+  id                       String   @id @default(cuid())
+  auditId                  String   @unique
+  mode                     String
+  source                   String
+  status                   String
+  provider                 String?
+  model                    String?
+  promptId                 String?
+  promptVersion            String?
+  baselinePlanJson         Json
+  snapshotJson             Json?
+  proposedPlanJson         Json?
+  acceptedPlanJson         Json?
+  rejectedProposalsJson    Json
+  importantJourneysJson    Json
+  websiteClassification    String?
+  classificationConfidence Decimal?
+  inputTokens              Int?
+  outputTokens             Int?
+  estimatedInputCost       Decimal?
+  estimatedOutputCost      Decimal?
+  estimatedCost            Decimal?
+  durationMs               Int?
+  fallbackReason           String?
+  warningsJson             Json
+  createdAt                DateTime @default(now())
+  completedAt              DateTime?
+  updatedAt                DateTime @updatedAt
+
+  audit Audit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+}
+
+model Mission {
+  id          String        @id @default(cuid())
+  auditId     String
+  type        String
+  role        String
+  status      MissionStatus @default(CREATED)
+  objective   String
+  priority    Int           @default(100)
+  required    Boolean       @default(true)
+  attemptCount Int          @default(0)
+  maxAttempts Int           @default(1)
+  timeoutMs   Int           @default(45000)
+  instructions Json
+  resultSummary String?
+  failureReason String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  failedAt    DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  audit           Audit            @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  browserSessions BrowserSession[]
+  browserAgentRuns BrowserAgentRun[]
+  browserSwarmAgents BrowserSwarmAgent[]
+
+  @@unique([auditId, type])
+}
+
+model BrowserAgentRun {
+  id               String   @id @default(cuid())
+  auditId          String
+  missionId        String
+  swarmAgentId     String?
+  status           String
+  provider         String
+  model            String?
+  promptId         String
+  promptVersion    String
+  objective        String
+  startUrl         String
+  finalUrl         String?
+  maxSteps         Int
+  stepsUsed        Int      @default(0)
+  providerCalls    Int      @default(0)
+  inputTokens      Int?
+  outputTokens     Int?
+  estimatedCost    Decimal?
+  startedAt        DateTime
+  completedAt      DateTime?
+  terminalReason   String?
+  summary          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  audit   Audit              @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  mission Mission            @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  steps   BrowserAgentStep[]
+
+  @@unique([swarmAgentId])
+  @@index([auditId])
+  @@index([missionId])
+}
+
+model BrowserAgentStep {
+  id                 String   @id @default(cuid())
+  runId              String
+  sequence           Int
+  observationJson    Json
+  proposedActionJson Json
+  validationStatus   String
+  safetyDecisionJson Json
+  executionStatus    String
+  executionResultJson Json
+  urlBefore          String?
+  urlAfter           String?
+  stateChanged       Boolean  @default(false)
+  inputTokens        Int?
+  outputTokens       Int?
+  estimatedCost      Decimal?
+  durationMs         Int?
+  startedAt          DateTime
+  completedAt        DateTime?
+  createdAt          DateTime @default(now())
+
+  run BrowserAgentRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, sequence])
+  @@index([runId])
+}
+
+model BrowserSwarmRun {
+  id                 String   @id @default(cuid())
+  auditId            String
+  status             String
+  mode               String
+  maxAgents          Int
+  maxConcurrency     Int
+  agentsCreated      Int      @default(0)
+  agentsCompleted    Int      @default(0)
+  totalSteps         Int      @default(0)
+  totalProviderCalls Int      @default(0)
+  totalInputTokens   Int?
+  totalOutputTokens  Int?
+  estimatedCost      Decimal?
+  coverageStateJson  Json
+  startedAt          DateTime
+  completedAt        DateTime?
+  terminalReason     String?
+  summary            String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  audit  Audit               @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  agents BrowserSwarmAgent[]
+
+  @@index([auditId])
+}
+
+model BrowserSwarmAgent {
+  id                String   @id @default(cuid())
+  swarmRunId        String
+  missionId         String
+  browserAgentRunId String?
+  role              String
+  objective         String
+  status            String
+  priority          Int
+  routesVisitedJson Json
+  findingsCount     Int      @default(0)
+  stepsUsed         Int      @default(0)
+  startedAt         DateTime?
+  completedAt       DateTime?
+  terminalReason    String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  swarmRun BrowserSwarmRun @relation(fields: [swarmRunId], references: [id], onDelete: Cascade)
+  mission  Mission         @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@unique([swarmRunId, role])
+  @@unique([browserAgentRunId])
+  @@index([missionId])
+}
+
+model BrowserSession {
+  id          String   @id @default(cuid())
+  missionId   String
+  status      BrowserSessionStatus
+  browser     String
+  viewportWidth Int
+  viewportHeight Int
+  startedAt   DateTime
+  completedAt DateTime?
+  finalUrl    String?
+  browserDurationMs Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+}
+
+model Finding {
+  id               String          @id @default(cuid())
+  auditId          String
+  category         FindingCategory
+  severity         FindingSeverity
+  title            String
+  summary          String
+  description      String
+  affectedUrl      String
+  affectedUrls     Json
+  stepsToReproduce Json
+  expectedBehavior String
+  actualBehavior   String
+  evidenceIds      Json
+  browser          String
+  viewport         String
+  confidence       Decimal
+  fingerprint      String
+  sourceMissions   Json
+  sourceMissionTypes Json @default("[]")
+  occurrenceCount Int     @default(1)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  audit    Audit             @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  evidence FindingEvidence[]
+
+  @@index([auditId, fingerprint])
+}
+
+model FindingEvidence {
+  id        String   @id @default(cuid())
+  findingId String
+  type      String
+  content   String?
+  localPath String?
+  metadata  Json
+  createdAt DateTime @default(now())
+
+  finding Finding @relation(fields: [findingId], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  auditId   String   @unique
+  targetUrl String
+  generatedAt DateTime @default(now())
+  overallScore Int
+  severityCounts Json
+  categoryCounts Json
+  missionSummary Json
+  executionWarnings Json
+  topFindings Json
+  limitations Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  audit Audit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+}
