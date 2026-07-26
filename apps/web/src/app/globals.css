@@ -135,6 +135,41 @@ p {
   background: var(--accent-strong);
 }
 
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+button,
+select {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  min-height: 36px;
+  padding: 0 10px;
+}
+
+button {
+  background: #ffffff;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+select {
+  background: #ffffff;
+  max-width: 100%;
+}
+
 .input {
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -147,11 +182,6 @@ p {
 .error-text {
   color: var(--danger);
   margin: 0;
-}
-
-.button:disabled {
-  cursor: wait;
-  opacity: 0.72;
 }
 
 .form {

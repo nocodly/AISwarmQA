@@ -94,7 +94,14 @@ export const runtimeConfigSchema = z.object({
   swarmMaxInputTokens: z.number().int().min(1000).max(500000),
   swarmMaxOutputTokens: z.number().int().min(100).max(100000),
   swarmMaxEstimatedCostUsd: z.number().positive().max(25),
-  swarmTimeoutMs: z.number().int().min(5000).max(600000)
+  swarmTimeoutMs: z.number().int().min(5000).max(600000),
+  githubAppId: z.string().optional(),
+  githubAppClientId: z.string().optional(),
+  githubAppClientSecret: z.string().optional(),
+  githubAppPrivateKey: z.string().optional(),
+  githubAppWebhookSecret: z.string().optional(),
+  githubOAuthRedirectUri: z.string().url().optional(),
+  githubExportMock: z.boolean()
 }).superRefine((config, context) => {
   if (config.autonomousMaxProviderCalls > config.autonomousMaxSteps) {
     context.addIssue({
@@ -276,7 +283,14 @@ export function readRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
     swarmMaxInputTokens: Number(loadedEnv.SWARM_MAX_INPUT_TOKENS ?? 100000),
     swarmMaxOutputTokens: Number(loadedEnv.SWARM_MAX_OUTPUT_TOKENS ?? 15000),
     swarmMaxEstimatedCostUsd: Number(loadedEnv.SWARM_MAX_ESTIMATED_COST_USD ?? 1),
-    swarmTimeoutMs: Number(loadedEnv.SWARM_TIMEOUT_MS ?? 300000)
+    swarmTimeoutMs: Number(loadedEnv.SWARM_TIMEOUT_MS ?? 300000),
+    githubAppId: loadedEnv.GITHUB_APP_ID || undefined,
+    githubAppClientId: loadedEnv.GITHUB_APP_CLIENT_ID || undefined,
+    githubAppClientSecret: loadedEnv.GITHUB_APP_CLIENT_SECRET || undefined,
+    githubAppPrivateKey: loadedEnv.GITHUB_APP_PRIVATE_KEY || undefined,
+    githubAppWebhookSecret: loadedEnv.GITHUB_APP_WEBHOOK_SECRET || undefined,
+    githubOAuthRedirectUri: loadedEnv.GITHUB_OAUTH_REDIRECT_URI || undefined,
+    githubExportMock: (loadedEnv.GITHUB_EXPORT_MOCK ?? "false") === "true"
   });
 
   return parsed;

@@ -28,6 +28,7 @@
     "smoke:swarm:anthropic": "pnpm --filter @ai-swarm-qa/smoke-tests smoke:swarm:anthropic",
     "smoke:swarm:safety": "pnpm --filter @ai-swarm-qa/smoke-tests smoke:swarm:safety",
     "smoke:swarm:budget": "pnpm --filter @ai-swarm-qa/smoke-tests smoke:swarm:budget",
+    "smoke:github-export": "pnpm --filter @ai-swarm-qa/smoke-tests smoke:github-export",
     "worker:dev": "pnpm --filter @ai-swarm-qa/worker dev"
   },
   "devDependencies": {

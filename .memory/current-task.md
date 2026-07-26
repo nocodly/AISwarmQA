@@ -1,8 +1,65 @@
 # Current Task
 
-Implement Phase 6: Real Anthropic Integration.
+Implement Phase 7: Production Audit Flow and GitHub Issue Export.
 
-Status: Completed on 2026-07-24.
+Status: Conditionally implemented on 2026-07-26; production verification is blocked on explicit production migration approval and GitHub App credentials.
+
+## Progress
+
+- Read repository guidance, memory, database schema, queue package, audit APIs, worker entrypoint, and audit results UI.
+- Confirmed Phase 1-6 baseline is clean on `main...origin/main`.
+- Confirmed production Railway web, worker, and Redis are configured from the previous step.
+- Added GitHub export Prisma models and additive migration.
+- Added `@ai-swarm-qa/github` with issue rendering, idempotency, sanitization, retry classification, labels, mock provider, and unit tests.
+- Added `github-export` BullMQ queue and worker processing.
+- Added API routes for GitHub status, install/callback scaffolding, repositories, repository metadata, export preview, export creation, batch status, and retry.
+- Added audit results page actions for JSON/CSV download, report sharing, finding selection, preview, confirmation, and export progress.
+- Added `pnpm smoke:github-export` manual smoke scaffold with explicit env confirmation.
+- Added `docs/PHASE_7_GITHUB_EXPORT.md`.
+- Verified `corepack pnpm@10.0.0 -r typecheck`, `corepack pnpm@10.0.0 -r test`, `corepack pnpm@10.0.0 -r build`, and `corepack pnpm@10.0.0 -r lint`.
+- Production `prisma migrate status` found six pending migrations. `migrate deploy` was not applied because explicit production schema-change approval is required.
+
+## Objective
+
+Verify the production audit pipeline and add a production-ready GitHub Issue export foundation that remains safe without GitHub App credentials.
+
+## Scope
+
+- Keep the existing audit pipeline, provider abstraction, worker architecture, and mock provider behavior intact.
+- Add database models for GitHub connections, repositories, export batches, and per-finding exports.
+- Add a GitHub export queue so issue creation is never performed synchronously in a web request.
+- Add a mockable GitHub provider abstraction and issue body renderer.
+- Add API routes for connection status, repository listing, export preview, export creation, export status, and retry.
+- Add audit results UI actions for download, share, selection, preview, and GitHub export states.
+- Add documentation and setup instructions for GitHub App credentials.
+
+## Exclusions
+
+- Do not invent GitHub App production secrets.
+- Do not ask users to paste PATs into the application.
+- Do not create real GitHub Issues during CI.
+- Do not make audit reports public by default.
+- Do not run destructive production database operations.
+
+## Implementation Plan
+
+1. Add shared schemas for GitHub export requests and queue jobs.
+2. Add Prisma models and migration for GitHub export state.
+3. Add database service helpers with idempotency and export progress updates.
+4. Add a GitHub provider package with mock provider, issue template generation, sanitization, retry classification, and label mapping tests.
+5. Add a dedicated GitHub export queue.
+6. Add API routes for status, repository metadata, preview, export, batch status, and retry.
+7. Wire worker processing for GitHub export jobs.
+8. Add audit results UI actions and export progress display.
+9. Add docs, `.env.example` entries, and smoke-test scaffolding.
+10. Run local validation and report production/manual setup status.
+
+## Safety Risks
+
+- GitHub credentials and installation tokens must never be exposed to the browser, Redis payloads, logs, or reports.
+- Export jobs must contain references only: batch ID, workspace ID, and user ID.
+- Idempotency must prevent duplicate GitHub Issues on retries, double-clicks, worker restarts, and provider timeouts.
+- Evidence URLs must not expose credentials or cross-workspace artifacts.
 
 ## Progress
 

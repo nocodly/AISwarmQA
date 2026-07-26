@@ -173,6 +173,55 @@ type Finding = {
   }>;
 };
 
+type GitHubStatus = {
+  appConfigured: boolean;
+  mockMode: boolean;
+  connected: boolean;
+  manualSetupRequired: boolean;
+  repositories: Array<{
+    id: string;
+    fullName: string;
+    issuesEnabled: boolean;
+  }>;
+};
+
+type GitHubExportPreview = {
+  repository: {
+    id: string;
+    fullName: string;
+    issuesEnabled: boolean;
+  };
+  selectedCount: number;
+  estimatedApiRequests: number;
+  issues: Array<{
+    findingId: string;
+    title: string;
+    labels: string[];
+  }>;
+};
+
+type GitHubExportBatch = {
+  batch: {
+    id: string;
+    status: string;
+    repository: string;
+    requestedCount: number;
+    createdCount: number;
+    failedCount: number;
+    skippedCount: number;
+  };
+  exports: Array<{
+    id: string;
+    findingId: string;
+    findingTitle: string;
+    status: string;
+    githubIssueNumber: number | null;
+    githubIssueUrl: string | null;
+    errorCode: string | null;
+    errorMessage: string | null;
+  }>;
+};
+
 const terminalStatuses = new Set(["completed", "failed", "cancelled"]);
 
 function formatDate(value: string | null) {
@@ -188,6 +237,13 @@ export function AuditDetails({ auditId }: { auditId: string }) {
   const [data, setData] = useState<AuditResponse | null>(null);
   const [findings, setFindings] = useState<Finding[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFindingIds, setSelectedFindingIds] = useState<string[]>([]);
+  const [excludeInformational, setExcludeInformational] = useState(true);
+  const [githubStatus, setGitHubStatus] = useState<GitHubStatus | null>(null);
+  const [selectedRepositoryId, setSelectedRepositoryId] = useState("");
+  const [githubPreview, setGitHubPreview] = useState<GitHubExportPreview | null>(null);
+  const [githubBatch, setGitHubBatch] = useState<GitHubExportBatch | null>(null);
+  const [githubMessage, setGitHubMessage] = useState<string | null>(null);
 
   const audit = data?.audit ?? null;
   const isTerminal = useMemo(() => (audit ? terminalStatuses.has(audit.status) : false), [audit]);
@@ -240,6 +296,146 @@ export function AuditDetails({ auditId }: { auditId: string }) {
       }
     };
   }, [auditId]);
+
+  useEffect(() => {
+    if (findings.length > 0 && selectedFindingIds.length === 0) {
+      setSelectedFindingIds(findings.map((finding) => finding.id));
+    }
+  }, [findings, selectedFindingIds.length]);
+
+  useEffect(() => {
+    if (audit?.status !== "completed") {
+      return;
+    }
+    let isActive = true;
+    async function loadGitHubStatus() {
+      try {
+        const response = await fetch("/api/integrations/github/status", { cache: "no-store" });
+        const body = (await response.json()) as GitHubStatus;
+        if (response.ok && isActive) {
+          setGitHubStatus(body);
+          setSelectedRepositoryId((current) => current || body.repositories[0]?.id || "");
+        }
+      } catch {
+        if (isActive) {
+          setGitHubMessage("GitHub integration status could not be loaded.");
+        }
+      }
+    }
+    void loadGitHubStatus();
+    return () => {
+      isActive = false;
+    };
+  }, [audit?.status]);
+
+  useEffect(() => {
+    if (!githubBatch || ["completed", "partially_completed", "failed", "cancelled"].includes(githubBatch.batch.status)) {
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/github-export/${githubBatch.batch.id}`, { cache: "no-store" });
+        const body = (await response.json()) as GitHubExportBatch;
+        if (response.ok) {
+          setGitHubBatch(body);
+        }
+      } catch {
+        setGitHubMessage("GitHub export progress could not be refreshed.");
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [githubBatch]);
+
+  function downloadReport(format: "json" | "csv") {
+    const rows = findings.map((finding) => ({
+      id: finding.id,
+      severity: finding.severity,
+      category: finding.category,
+      title: finding.title,
+      affectedUrl: finding.affectedUrl,
+      summary: finding.summary
+    }));
+    const content =
+      format === "json"
+        ? JSON.stringify({ audit, report: data?.report, findings }, null, 2)
+        : [
+            "id,severity,category,title,affectedUrl,summary",
+            ...rows.map((row) =>
+              [row.id, row.severity, row.category, row.title, row.affectedUrl, row.summary]
+                .map((value) => `"${String(value).replace(/"/g, '""')}"`)
+                .join(",")
+            )
+          ].join("\n");
+    const blob = new Blob([content], { type: format === "json" ? "application/json" : "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `aiswarmqa-audit-${auditId}.${format}`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function shareReport() {
+    const url = window.location.href;
+    if (navigator.share) {
+      await navigator.share({ title: "AISwarmQA audit report", url });
+      return;
+    }
+    await navigator.clipboard.writeText(url);
+    setGitHubMessage("Report link copied.");
+  }
+
+  async function previewGitHubExport() {
+    setGitHubMessage(null);
+    setGitHubPreview(null);
+    const response = await fetch(`/api/audits/${auditId}/github-export/preview`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        findingIds: selectedFindingIds,
+        repositoryId: selectedRepositoryId || undefined,
+        excludeInformational,
+        confirmed: false
+      })
+    });
+    const body = await response.json();
+    if (!response.ok) {
+      setGitHubMessage(body.error?.message ?? "GitHub export preview failed.");
+      return;
+    }
+    setGitHubPreview(body as GitHubExportPreview);
+  }
+
+  async function confirmGitHubExport() {
+    if (!githubPreview) {
+      return;
+    }
+    const response = await fetch(`/api/audits/${auditId}/github-export`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        findingIds: selectedFindingIds,
+        repositoryId: githubPreview.repository.id,
+        excludeInformational,
+        confirmed: true
+      })
+    });
+    const body = await response.json();
+    if (!response.ok) {
+      setGitHubMessage(body.error?.message ?? "GitHub export could not be queued.");
+      return;
+    }
+    const batchResponse = await fetch(`/api/github-export/${body.batchId}`, { cache: "no-store" });
+    if (batchResponse.ok) {
+      setGitHubBatch((await batchResponse.json()) as GitHubExportBatch);
+    }
+    setGitHubMessage("GitHub export queued.");
+  }
+
+  function toggleFinding(findingId: string) {
+    setSelectedFindingIds((current) => (current.includes(findingId) ? current.filter((id) => id !== findingId) : [...current, findingId]));
+    setGitHubPreview(null);
+  }
 
   if (error) {
     return (
@@ -618,6 +814,105 @@ export function AuditDetails({ auditId }: { auditId: string }) {
       ) : null}
 
       <section className="panel" style={{ marginTop: 16 }}>
+        <h2>Actions</h2>
+        <div className="toolbar">
+          <button type="button" onClick={() => downloadReport("json")} disabled={findings.length === 0}>
+            Download JSON
+          </button>
+          <button type="button" onClick={() => downloadReport("csv")} disabled={findings.length === 0}>
+            Download CSV
+          </button>
+          <button type="button" onClick={() => void shareReport()}>
+            Share report
+          </button>
+        </div>
+        <div className="mission-list" style={{ marginTop: 12 }}>
+          <article className="mission-row">
+            <div>
+              <div className="badge">GitHub</div>
+              <h3>Send findings to GitHub</h3>
+              {githubStatus?.manualSetupRequired ? (
+                <p>GitHub App credentials are not configured yet. Use the Phase 7 setup guide before enabling production issue creation.</p>
+              ) : null}
+              <p>
+                Selected: {selectedFindingIds.length} finding{selectedFindingIds.length === 1 ? "" : "s"}
+              </p>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={excludeInformational}
+                  onChange={(event) => setExcludeInformational(event.target.checked)}
+                />{" "}
+                Exclude informational findings
+              </label>
+              {githubStatus?.repositories.length ? (
+                <select value={selectedRepositoryId} onChange={(event) => setSelectedRepositoryId(event.target.value)}>
+                  {githubStatus.repositories.map((repository) => (
+                    <option value={repository.id} key={repository.id}>
+                      {repository.fullName}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+              {githubMessage ? <p>{githubMessage}</p> : null}
+              {githubPreview ? (
+                <details open>
+                  <summary>
+                    Preview {githubPreview.selectedCount} issue{githubPreview.selectedCount === 1 ? "" : "s"} for {githubPreview.repository.fullName}
+                  </summary>
+                  <ul>
+                    {githubPreview.issues.map((issue) => (
+                      <li key={issue.findingId}>
+                        {issue.title} ({issue.labels.join(", ")})
+                      </li>
+                    ))}
+                  </ul>
+                  <p>Estimated GitHub API requests: {githubPreview.estimatedApiRequests}</p>
+                </details>
+              ) : null}
+              {githubBatch ? (
+                <details open>
+                  <summary>
+                    Export {githubBatch.batch.status}: {githubBatch.batch.createdCount} created / {githubBatch.batch.failedCount} failed
+                  </summary>
+                  <div className="mission-list" style={{ marginTop: 8 }}>
+                    {githubBatch.exports.map((item) => (
+                      <article className="card" key={item.id}>
+                        <div className="badge">{item.status}</div>
+                        <p>{item.findingTitle}</p>
+                        {item.githubIssueUrl ? (
+                          <p>
+                            <a href={item.githubIssueUrl} target="_blank" rel="noreferrer">
+                              Open GitHub Issue #{item.githubIssueNumber}
+                            </a>
+                          </p>
+                        ) : null}
+                        {item.errorMessage ? <p className="error-text">{item.errorMessage}</p> : null}
+                      </article>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+            </div>
+            <div className="mission-meta">
+              <button type="button" onClick={() => setSelectedFindingIds(findings.map((finding) => finding.id))} disabled={findings.length === 0}>
+                Select all
+              </button>
+              <button type="button" onClick={() => setSelectedFindingIds([])} disabled={selectedFindingIds.length === 0}>
+                Clear
+              </button>
+              <button type="button" onClick={() => void previewGitHubExport()} disabled={selectedFindingIds.length === 0}>
+                Preview GitHub export
+              </button>
+              <button type="button" onClick={() => void confirmGitHubExport()} disabled={!githubPreview}>
+                Send {selectedFindingIds.length} to GitHub
+              </button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section className="panel" style={{ marginTop: 16 }}>
         <h2>Findings</h2>
         {audit.status === "completed" && findings.length === 0 ? (
           <p>No issues were found by this limited deterministic scan. This does not mean the site is bug-free.</p>
@@ -627,6 +922,9 @@ export function AuditDetails({ auditId }: { auditId: string }) {
             <div className="badge">
               {finding.severity} / {finding.category}
             </div>
+            <label>
+              <input type="checkbox" checked={selectedFindingIds.includes(finding.id)} onChange={() => toggleFinding(finding.id)} /> Select for GitHub export
+            </label>
             <h2 style={{ marginTop: 12 }}>{finding.title}</h2>
             <p>{finding.summary}</p>
             <p>

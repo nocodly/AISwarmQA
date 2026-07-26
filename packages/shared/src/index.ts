@@ -55,6 +55,42 @@ export const auditRequestSchema = z.object({
 
 export type AuditRequest = z.infer<typeof auditRequestSchema>;
 
+export const githubExportFindingSelectionSchema = z.object({
+  findingIds: z.array(z.string().min(1)).min(1).max(100),
+  excludeInformational: z.boolean().default(true)
+});
+
+export const githubExportPreviewRequestSchema = githubExportFindingSelectionSchema.extend({
+  repositoryId: z.string().min(1).optional(),
+  labelNames: z.array(z.string().min(1).max(80)).max(20).default([]),
+  assignees: z.array(z.string().min(1).max(80)).max(10).default([]),
+  milestoneNumber: z.number().int().positive().optional(),
+  createMissingLabels: z.boolean().default(false)
+});
+
+export type GitHubExportPreviewRequest = z.infer<typeof githubExportPreviewRequestSchema>;
+
+export const githubExportRequestSchema = githubExportPreviewRequestSchema.extend({
+  repositoryId: z.string().min(1),
+  confirmed: z.literal(true)
+});
+
+export type GitHubExportRequest = z.infer<typeof githubExportRequestSchema>;
+
+export const githubExportRetryRequestSchema = z.object({
+  confirmed: z.literal(true)
+});
+
+export type GitHubExportRetryRequest = z.infer<typeof githubExportRetryRequestSchema>;
+
+export const githubExportJobSchema = z.object({
+  batchId: z.string().min(1),
+  workspaceId: z.string().min(1),
+  userId: z.string().min(1)
+});
+
+export type GitHubExportJob = z.infer<typeof githubExportJobSchema>;
+
 export const auditJobSchema = z.object({
   auditId: z.string().min(1),
   missionId: z.string().min(1),

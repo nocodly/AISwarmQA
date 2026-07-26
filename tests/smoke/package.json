@@ -18,6 +18,7 @@
     "smoke:swarm:anthropic": "tsx src/swarm-smoke.ts anthropic",
     "smoke:swarm:safety": "tsx src/swarm-smoke.ts safety",
     "smoke:swarm:budget": "tsx src/swarm-smoke.ts budget",
+    "smoke:github-export": "tsx src/github-export-smoke.ts",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

@@ -60,6 +60,28 @@ enum FindingCategory {
   CONSOLE
 }
 
+enum GitHubAccountType {
+  USER
+  ORGANIZATION
+}
+
+enum GitHubExportStatus {
+  QUEUED
+  CREATING
+  CREATED
+  FAILED
+  SKIPPED
+}
+
+enum GitHubExportBatchStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  PARTIALLY_COMPLETED
+  FAILED
+  CANCELLED
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -67,7 +89,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships OrganizationMember[]
+  memberships       OrganizationMember[]
+  githubConnections GitHubConnection[]
+  githubExportBatches GitHubExportBatch[]
+  githubExports FindingGitHubExport[]
 }
 
 model Organization {
@@ -77,8 +102,9 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members  OrganizationMember[]
-  projects Project[]
+  members           OrganizationMember[]
+  projects          Project[]
+  githubConnections GitHubConnection[]
 }
 
 model OrganizationMember {
@@ -133,6 +159,8 @@ model Audit {
   plan     AuditPlan?
   browserAgentRuns BrowserAgentRun[]
   browserSwarmRuns BrowserSwarmRun[]
+  githubExportBatches GitHubExportBatch[]
+  githubExports FindingGitHubExport[]
 }
 
 model AuditPlan {
@@ -356,6 +384,7 @@ model Finding {
 
   audit    Audit             @relation(fields: [auditId], references: [id], onDelete: Cascade)
   evidence FindingEvidence[]
+  githubExports FindingGitHubExport[]
 
   @@index([auditId, fingerprint])
 }
@@ -388,4 +417,108 @@ model Report {
   updatedAt DateTime @updatedAt
 
   audit Audit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+}
+
+model GitHubConnection {
+  id               String            @id @default(cuid())
+  workspaceId      String
+  userId           String
+  githubAccountId  String
+  githubLogin      String
+  accountType      GitHubAccountType
+  installationId   String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  revokedAt        DateTime?
+
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repositories GitHubRepository[]
+  exportBatches GitHubExportBatch[]
+  exports FindingGitHubExport[]
+
+  @@unique([workspaceId, installationId])
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+model GitHubRepository {
+  id                  String   @id @default(cuid())
+  githubConnectionId  String
+  githubRepositoryId  String
+  owner               String
+  name                String
+  fullName            String
+  defaultBranch       String?
+  private             Boolean  @default(false)
+  issuesEnabled       Boolean  @default(false)
+  lastSyncedAt        DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  githubConnection GitHubConnection @relation(fields: [githubConnectionId], references: [id], onDelete: Cascade)
+  exportBatches GitHubExportBatch[]
+  exports FindingGitHubExport[]
+
+  @@unique([githubConnectionId, githubRepositoryId])
+  @@unique([githubConnectionId, fullName])
+  @@index([fullName])
+}
+
+model GitHubExportBatch {
+  id              String                  @id @default(cuid())
+  auditId         String
+  repositoryId    String
+  githubConnectionId String
+  requestedCount  Int
+  createdCount    Int                     @default(0)
+  failedCount     Int                     @default(0)
+  skippedCount    Int                     @default(0)
+  status          GitHubExportBatchStatus @default(QUEUED)
+  createdByUserId String
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  completedAt     DateTime?
+
+  audit Audit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  repository GitHubRepository @relation(fields: [repositoryId], references: [id], onDelete: Restrict)
+  githubConnection GitHubConnection @relation(fields: [githubConnectionId], references: [id], onDelete: Restrict)
+  createdBy User @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  exports FindingGitHubExport[]
+
+  @@index([auditId])
+  @@index([repositoryId])
+  @@index([githubConnectionId])
+  @@index([status])
+}
+
+model FindingGitHubExport {
+  id                  String             @id @default(cuid())
+  batchId             String?
+  auditId             String
+  findingId           String
+  githubConnectionId  String
+  repositoryId        String
+  githubIssueNumber   Int?
+  githubIssueUrl      String?
+  status              GitHubExportStatus @default(QUEUED)
+  errorCode           String?
+  errorMessage        String?
+  idempotencyKey      String             @unique
+  createdByUserId     String
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  batch GitHubExportBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  audit Audit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  finding Finding @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  githubConnection GitHubConnection @relation(fields: [githubConnectionId], references: [id], onDelete: Restrict)
+  repository GitHubRepository @relation(fields: [repositoryId], references: [id], onDelete: Restrict)
+  createdBy User @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([auditId])
+  @@index([findingId])
+  @@index([repositoryId])
+  @@index([batchId])
+  @@index([status])
 }

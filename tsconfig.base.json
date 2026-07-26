@@ -19,6 +19,7 @@
       "@ai-swarm-qa/browser-actions": ["./packages/browser-actions/src/index.ts"],
       "@ai-swarm-qa/config": ["./packages/config/src/index.ts"],
       "@ai-swarm-qa/database": ["./packages/database/src/index.ts"],
+      "@ai-swarm-qa/github": ["./packages/github/src/index.ts"],
       "@ai-swarm-qa/queue": ["./packages/queue/src/index.ts"],
       "@ai-swarm-qa/shared": ["./packages/shared/src/index.ts"],
       "@ai-swarm-qa/storage": ["./packages/storage/src/index.ts"]

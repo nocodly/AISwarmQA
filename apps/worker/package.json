@@ -16,6 +16,7 @@
     "@ai-swarm-qa/ai": "workspace:*",
     "@ai-swarm-qa/config": "workspace:*",
     "@ai-swarm-qa/database": "workspace:*",
+    "@ai-swarm-qa/github": "workspace:*",
     "@ai-swarm-qa/queue": "workspace:*",
     "@ai-swarm-qa/shared": "workspace:*",
     "axe-core": "4.12.1",

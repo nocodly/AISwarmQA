@@ -17,7 +17,13 @@ import {
   completeBrowserSessionWithDuration,
   createBrowserSession,
   finalizeAuditIfReady,
+  finalizeGitHubExportBatch,
   getAuditSummary,
+  getGitHubExportBatch,
+  markFindingGitHubExportCreated,
+  markFindingGitHubExportCreating,
+  markFindingGitHubExportFailed,
+  markGitHubExportBatchRunning,
   markMissionCompleted,
   markMissionFailed,
   markMissionQueued,
@@ -25,10 +31,12 @@ import {
   persistFindings,
   persistMissionPlan,
   transitionAuditStatus,
+  toIssueFinding,
   upsertAuditPlan,
   type PersistableFinding
 } from "@ai-swarm-qa/database";
-import { createAuditQueue, enqueueMission, type AuditQueueJob } from "@ai-swarm-qa/queue";
+import { buildIssueDraft, createGitHubProvider, GitHubProviderError } from "@ai-swarm-qa/github";
+import { createAuditQueue, enqueueMission, GITHUB_EXPORT_QUEUE_NAME, type AuditQueueJob } from "@ai-swarm-qa/queue";
 import {
   buildPlannerInput,
   calculateModelCost,
@@ -44,6 +52,7 @@ import {
   planAuditMissions,
   sanitizePlanningSnapshot,
   type ExecuteMissionJob,
+  githubExportJobSchema,
   type MissionDefinition,
   type MissionType,
   type PlannerFallbackReason,
@@ -968,6 +977,86 @@ const worker = new Worker<AuditQueueJob>(AUDIT_QUEUE_NAME, runQueueJob, {
   concurrency: config.missionWorkerConcurrency
 });
 
+async function runGitHubExportJob(job: Job<unknown>) {
+  const payload = githubExportJobSchema.parse(job.data);
+  const startedAt = Date.now();
+  const appConfigured = Boolean(config.githubAppId && config.githubAppClientId && config.githubAppPrivateKey);
+  const provider = createGitHubProvider({ appConfigured, mock: config.githubExportMock });
+  log("github.export.started", { batchId: payload.batchId, workspaceId: payload.workspaceId });
+  await markGitHubExportBatchRunning(payload.batchId);
+  const batch = await getGitHubExportBatch(payload.batchId);
+  const [owner, repo] = batch.repository.fullName.split("/");
+  if (!owner || !repo) {
+    throw new Error("GitHub repository full name is invalid.");
+  }
+
+  for (const item of batch.exports) {
+    if (item.status === "CREATED" && item.githubIssueUrl) {
+      log("github.issue.skipped", { batchId: batch.id, findingId: item.findingId, reason: "already_created" });
+      continue;
+    }
+    await markFindingGitHubExportCreating(item.id);
+    const finding = toIssueFinding(item.finding);
+    const draft = buildIssueDraft({
+      finding,
+      auditDate: batch.createdAt.toISOString(),
+      toolVersion: "0.1.0",
+      evidenceBaseUrl: `${config.appUrl.replace(/\/$/, "")}/api/audits/${batch.auditId}/evidence`
+    });
+    try {
+      const issue = await provider.createIssue({
+        owner,
+        repo,
+        idempotencyKey: item.idempotencyKey,
+        ...draft
+      });
+      await markFindingGitHubExportCreated({ exportId: item.id, issueNumber: issue.number, issueUrl: issue.url });
+      log("github.issue.created", {
+        batchId: batch.id,
+        auditId: batch.auditId,
+        findingId: item.findingId,
+        repository: batch.repository.fullName,
+        githubIssueNumber: issue.number
+      });
+    } catch (error) {
+      const code = error instanceof GitHubProviderError ? error.code : "GITHUB_EXPORT_FAILED";
+      const retryable = error instanceof GitHubProviderError ? error.retryable : false;
+      await markFindingGitHubExportFailed({
+        exportId: item.id,
+        errorCode: code,
+        errorMessage: safeFailureMessage(error)
+      });
+      logError("github.issue.failed", {
+        batchId: batch.id,
+        auditId: batch.auditId,
+        findingId: item.findingId,
+        repository: batch.repository.fullName,
+        errorCategory: code,
+        retryable
+      });
+      if (retryable) {
+        throw error;
+      }
+    }
+  }
+
+  const finalized = await finalizeGitHubExportBatch(batch.id);
+  log("github.export.completed", {
+    batchId: batch.id,
+    status: finalized.status.toLowerCase(),
+    createdCount: finalized.createdCount,
+    failedCount: finalized.failedCount,
+    skippedCount: finalized.skippedCount,
+    durationMs: Date.now() - startedAt
+  });
+  return { batchId: batch.id, status: finalized.status.toLowerCase() };
+}
+
+const githubExportWorker = new Worker(GITHUB_EXPORT_QUEUE_NAME, runGitHubExportJob, {
+  connection: { url: config.redisUrl },
+  concurrency: 1
+});
+
 worker.on("completed", (job) => {
   log("worker_job_completed", {
     jobId: job.id,
@@ -990,3 +1079,4 @@ worker.on("failed", (job, error) => {
 });
 
 log("worker_started", { queue: AUDIT_QUEUE_NAME, concurrency: config.missionWorkerConcurrency });
+log("github_export_worker_started", { queue: GITHUB_EXPORT_QUEUE_NAME, concurrency: 1 });

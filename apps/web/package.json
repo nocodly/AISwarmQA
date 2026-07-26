@@ -13,6 +13,7 @@
   "dependencies": {
     "@ai-swarm-qa/config": "workspace:*",
     "@ai-swarm-qa/database": "workspace:*",
+    "@ai-swarm-qa/github": "workspace:*",
     "@ai-swarm-qa/queue": "workspace:*",
     "@ai-swarm-qa/shared": "workspace:*",
     "lucide-react": "1.25.0",

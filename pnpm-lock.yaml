@@ -29,6 +29,9 @@ importers:
       '@ai-swarm-qa/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@ai-swarm-qa/github':
+        specifier: workspace:*
+        version: link:../../packages/github
       '@ai-swarm-qa/queue':
         specifier: workspace:*
         version: link:../../packages/queue
@@ -78,6 +81,9 @@ importers:
       '@ai-swarm-qa/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@ai-swarm-qa/github':
+        specifier: workspace:*
+        version: link:../../packages/github
       '@ai-swarm-qa/queue':
         specifier: workspace:*
         version: link:../../packages/queue
@@ -176,6 +182,19 @@ importers:
       prisma:
         specifier: 7.9.0
         version: 7.9.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@types/node@26.1.1)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.1))
+
+  packages/github:
+    dependencies:
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+    devDependencies:
       typescript:
         specifier: 5.9.3
         version: 5.9.3
