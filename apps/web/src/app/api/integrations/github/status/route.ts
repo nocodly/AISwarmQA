@@ -12,6 +12,7 @@ export async function GET() {
       mockMode: config.githubExportMock,
       connected: status.connected,
       repositories: status.repositories,
+      connectUrl: appConfigured || config.githubExportMock ? "/api/integrations/github/install" : null,
       manualSetupRequired: !appConfigured && !config.githubExportMock
     });
   } catch (error) {

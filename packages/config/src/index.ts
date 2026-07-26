@@ -101,6 +101,7 @@ export const runtimeConfigSchema = z.object({
   githubAppPrivateKey: z.string().optional(),
   githubAppWebhookSecret: z.string().optional(),
   githubOAuthRedirectUri: z.string().url().optional(),
+  githubAppSetupUrl: z.string().url().optional(),
   githubExportMock: z.boolean()
 }).superRefine((config, context) => {
   if (config.autonomousMaxProviderCalls > config.autonomousMaxSteps) {
@@ -289,7 +290,8 @@ export function readRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
     githubAppClientSecret: loadedEnv.GITHUB_APP_CLIENT_SECRET || undefined,
     githubAppPrivateKey: loadedEnv.GITHUB_APP_PRIVATE_KEY || undefined,
     githubAppWebhookSecret: loadedEnv.GITHUB_APP_WEBHOOK_SECRET || undefined,
-    githubOAuthRedirectUri: loadedEnv.GITHUB_OAUTH_REDIRECT_URI || undefined,
+    githubOAuthRedirectUri: loadedEnv.GITHUB_APP_CALLBACK_URL || loadedEnv.GITHUB_OAUTH_REDIRECT_URI || undefined,
+    githubAppSetupUrl: loadedEnv.GITHUB_APP_SETUP_URL || undefined,
     githubExportMock: (loadedEnv.GITHUB_EXPORT_MOCK ?? "false") === "true"
   });
 

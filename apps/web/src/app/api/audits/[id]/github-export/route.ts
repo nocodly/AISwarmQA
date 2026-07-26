@@ -28,7 +28,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       auditId: audit.id,
       repositoryId: repository.id,
       findingIds: body.findingIds,
-      idempotencyKeys
+      idempotencyKeys,
+      exportOptions: {
+        labelNames: body.labelNames,
+        assignees: body.assignees,
+        createMissingLabels: body.createMissingLabels,
+        ...(typeof body.milestoneNumber === "number" ? { milestoneNumber: body.milestoneNumber } : {})
+      }
     });
     queue = createGitHubExportQueue(config.redisUrl);
     await enqueueGitHubExport(queue, {

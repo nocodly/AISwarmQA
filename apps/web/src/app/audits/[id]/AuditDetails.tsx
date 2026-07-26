@@ -178,10 +178,16 @@ type GitHubStatus = {
   mockMode: boolean;
   connected: boolean;
   manualSetupRequired: boolean;
+  connectUrl: string | null;
   repositories: Array<{
     id: string;
     fullName: string;
     issuesEnabled: boolean;
+    archived?: boolean;
+    private?: boolean;
+    defaultBranch?: string | null;
+    accountLogin?: string;
+    accountType?: string;
   }>;
 };
 
@@ -190,13 +196,22 @@ type GitHubExportPreview = {
     id: string;
     fullName: string;
     issuesEnabled: boolean;
+    archived?: boolean;
+    defaultBranch?: string | null;
   };
   selectedCount: number;
+  issuesToCreate: number;
+  alreadyExportedCount: number;
+  warnings: string[];
+  missingLabels: string[];
   estimatedApiRequests: number;
   issues: Array<{
     findingId: string;
     title: string;
     labels: string[];
+    evidenceAvailable: boolean;
+    alreadyExported: boolean;
+    existingIssueUrl: string | null;
   }>;
 };
 
@@ -430,6 +445,22 @@ export function AuditDetails({ auditId }: { auditId: string }) {
       setGitHubBatch((await batchResponse.json()) as GitHubExportBatch);
     }
     setGitHubMessage("GitHub export queued.");
+  }
+
+  async function retryGitHubExport() {
+    if (!githubBatch) return;
+    const response = await fetch(`/api/github-export/${githubBatch.batch.id}/retry`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ confirmed: true })
+    });
+    const body = await response.json();
+    if (!response.ok) {
+      setGitHubMessage(body.error?.message ?? "GitHub export retry could not be queued.");
+      return;
+    }
+    setGitHubBatch({ ...githubBatch, batch: { ...githubBatch.batch, status: "queued" } });
+    setGitHubMessage("GitHub export retry queued.");
   }
 
   function toggleFinding(findingId: string) {
@@ -834,6 +865,11 @@ export function AuditDetails({ auditId }: { auditId: string }) {
               {githubStatus?.manualSetupRequired ? (
                 <p>GitHub App credentials are not configured yet. Use the Phase 7 setup guide before enabling production issue creation.</p>
               ) : null}
+              {!githubStatus?.connected && githubStatus?.connectUrl ? (
+                <p>
+                  <a href={`${githubStatus.connectUrl}?returnUrl=${encodeURIComponent(`/audits/${auditId}`)}`}>Connect GitHub</a>
+                </p>
+              ) : null}
               <p>
                 Selected: {selectedFindingIds.length} finding{selectedFindingIds.length === 1 ? "" : "s"}
               </p>
@@ -850,6 +886,9 @@ export function AuditDetails({ auditId }: { auditId: string }) {
                   {githubStatus.repositories.map((repository) => (
                     <option value={repository.id} key={repository.id}>
                       {repository.fullName}
+                      {repository.private ? " private" : " public"}
+                      {repository.archived ? " archived" : ""}
+                      {!repository.issuesEnabled ? " issues disabled" : ""}
                     </option>
                   ))}
                 </select>
@@ -864,9 +903,15 @@ export function AuditDetails({ auditId }: { auditId: string }) {
                     {githubPreview.issues.map((issue) => (
                       <li key={issue.findingId}>
                         {issue.title} ({issue.labels.join(", ")})
+                        {issue.alreadyExported ? " - already exported" : ""}
+                        {!issue.evidenceAvailable ? " - no external evidence" : ""}
                       </li>
                     ))}
                   </ul>
+                  {githubPreview.warnings.length > 0 ? <p>{githubPreview.warnings.join(" ")}</p> : null}
+                  <p>
+                    Issues to create: {githubPreview.issuesToCreate}. Already exported: {githubPreview.alreadyExportedCount}.
+                  </p>
                   <p>Estimated GitHub API requests: {githubPreview.estimatedApiRequests}</p>
                 </details>
               ) : null}
@@ -891,6 +936,11 @@ export function AuditDetails({ auditId }: { auditId: string }) {
                       </article>
                     ))}
                   </div>
+                  {githubBatch.batch.failedCount > 0 ? (
+                    <button type="button" onClick={() => void retryGitHubExport()}>
+                      Retry failed exports
+                    </button>
+                  ) : null}
                 </details>
               ) : null}
             </div>
@@ -905,7 +955,7 @@ export function AuditDetails({ auditId }: { auditId: string }) {
                 Preview GitHub export
               </button>
               <button type="button" onClick={() => void confirmGitHubExport()} disabled={!githubPreview}>
-                Send {selectedFindingIds.length} to GitHub
+                Create {githubPreview?.issuesToCreate ?? selectedFindingIds.length} GitHub Issues
               </button>
             </div>
           </article>

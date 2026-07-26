@@ -23,6 +23,7 @@ import {
   markFindingGitHubExportCreated,
   markFindingGitHubExportCreating,
   markFindingGitHubExportFailed,
+  markFindingGitHubExportSkipped,
   markGitHubExportBatchRunning,
   markMissionCompleted,
   markMissionFailed,
@@ -35,7 +36,7 @@ import {
   upsertAuditPlan,
   type PersistableFinding
 } from "@ai-swarm-qa/database";
-import { buildIssueDraft, createGitHubProvider, GitHubProviderError } from "@ai-swarm-qa/github";
+import { buildIssueDraft, createGitHubProvider, extractFindingMarker, GitHubProviderError } from "@ai-swarm-qa/github";
 import { createAuditQueue, enqueueMission, GITHUB_EXPORT_QUEUE_NAME, type AuditQueueJob } from "@ai-swarm-qa/queue";
 import {
   buildPlannerInput,
@@ -981,7 +982,7 @@ async function runGitHubExportJob(job: Job<unknown>) {
   const payload = githubExportJobSchema.parse(job.data);
   const startedAt = Date.now();
   const appConfigured = Boolean(config.githubAppId && config.githubAppClientId && config.githubAppPrivateKey);
-  const provider = createGitHubProvider({ appConfigured, mock: config.githubExportMock });
+  const provider = createGitHubProvider({ appConfigured, mock: config.githubExportMock, appId: config.githubAppId, privateKey: config.githubAppPrivateKey });
   log("github.export.started", { batchId: payload.batchId, workspaceId: payload.workspaceId });
   await markGitHubExportBatchRunning(payload.batchId);
   const batch = await getGitHubExportBatch(payload.batchId);
@@ -997,17 +998,44 @@ async function runGitHubExportJob(job: Job<unknown>) {
     }
     await markFindingGitHubExportCreating(item.id);
     const finding = toIssueFinding(item.finding);
+    const exportOptions = (batch.exportOptionsJson && typeof batch.exportOptionsJson === "object" ? batch.exportOptionsJson : {}) as {
+      labelNames?: string[];
+      assignees?: string[];
+      milestoneNumber?: number;
+    };
     const draft = buildIssueDraft({
       finding,
       auditDate: batch.createdAt.toISOString(),
       toolVersion: "0.1.0",
+      ...(exportOptions.labelNames ? { labelNames: exportOptions.labelNames } : {}),
+      ...(exportOptions.assignees ? { assignees: exportOptions.assignees } : {}),
+      ...(typeof exportOptions.milestoneNumber === "number" ? { milestoneNumber: exportOptions.milestoneNumber } : {}),
       evidenceBaseUrl: `${config.appUrl.replace(/\/$/, "")}/api/audits/${batch.auditId}/evidence`
     });
     try {
+      const marker = extractFindingMarker(draft.body);
+      if (marker && provider.findIssueByMarker) {
+        const existing = await provider.findIssueByMarker({
+          owner,
+          repo,
+          marker,
+          installationId: batch.githubConnection.installationId
+        });
+        if (existing) {
+          await markFindingGitHubExportSkipped({
+            exportId: item.id,
+            issueNumber: existing.number,
+            issueUrl: existing.url,
+            reason: "Existing GitHub issue with AISwarmQA finding marker was reused."
+          });
+          continue;
+        }
+      }
       const issue = await provider.createIssue({
         owner,
         repo,
         idempotencyKey: item.idempotencyKey,
+        installationId: batch.githubConnection.installationId,
         ...draft
       });
       await markFindingGitHubExportCreated({ exportId: item.id, issueNumber: issue.number, issueUrl: issue.url });

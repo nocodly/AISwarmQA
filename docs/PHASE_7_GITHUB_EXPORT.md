@@ -238,6 +238,81 @@ Normal CI must not set `GITHUB_EXPORT_CONFIRM=true`.
 - Evidence links require the protected evidence route/object storage work before production issue images are permanent.
 - Authentication is still the local development owner model from earlier phases.
 
+## Phase 7B: Real GitHub App Integration
+
+Phase 7B completes the backend foundation for real GitHub App issue export while preserving mock-mode CI behavior.
+
+Implemented:
+
+- Signed GitHub App installation state with one-time database consumption.
+- GitHub App callback route that validates state, consumes it once, loads installation repositories server-side, and stores only installation/repository metadata.
+- Real GitHub App provider using app JWTs and short-lived installation tokens generated on demand.
+- Repository listing, repository metadata, labels, assignable users, milestones, issue creation, and hidden marker search.
+- Webhook route with `X-Hub-Signature-256` validation and delivery ID idempotency.
+- Installation revoke handling for deleted or suspended installations.
+- Repository resync support for installation and installation repository webhook events.
+- Export preview warnings for missing labels, invalid assignees, invalid milestones, evidence availability, and already exported findings.
+- Worker duplicate prevention using both local idempotency keys and GitHub marker search.
+- `SKIPPED` export records that preserve an existing issue URL when a duplicate marker is found.
+- Worker Docker image remains the Playwright image added in production verification.
+
+New database fields and tables:
+
+- `GitHubAuthState`
+- `GitHubWebhookDelivery`
+- `FindingEvidence.publicEvidenceId`
+- `FindingEvidence.externalSharingEnabled`
+- `FindingEvidence.revokedAt`
+- `GitHubRepository.archived`
+- `GitHubExportBatch.exportOptionsJson`
+
+Security posture:
+
+- Installation tokens are not stored.
+- Raw callback state values are not stored; only SHA-256 hashes are persisted.
+- GitHub webhook payload bodies are not logged or stored.
+- Queue payloads still contain only references: `batchId`, `workspaceId`, and `userId`.
+- GitHub private keys, client secrets, webhook secrets, and installation tokens must never be logged.
+
+Required Railway variables:
+
+```env
+GITHUB_APP_ID=
+GITHUB_APP_CLIENT_ID=
+GITHUB_APP_CLIENT_SECRET=
+GITHUB_APP_PRIVATE_KEY=
+GITHUB_APP_WEBHOOK_SECRET=
+GITHUB_APP_CALLBACK_URL=
+GITHUB_APP_SETUP_URL=
+GITHUB_EXPORT_MOCK=false
+```
+
+Least-secret distribution:
+
+- Web: `GITHUB_APP_ID`, `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_APP_WEBHOOK_SECRET`, `GITHUB_APP_CALLBACK_URL`, `GITHUB_APP_SETUP_URL`.
+- Worker: `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_EXPORT_MOCK=false`.
+- Redis and database services: no GitHub App secrets.
+
+Manual GitHub App setup:
+
+1. Create a GitHub App named `AISwarmQA Export`.
+2. Set Homepage URL to `https://ai-swarm-qaweb-production.up.railway.app`.
+3. Set Callback URL to `https://ai-swarm-qaweb-production.up.railway.app/api/integrations/github/callback`.
+4. Set Webhook URL to `https://ai-swarm-qaweb-production.up.railway.app/api/integrations/github/webhook`.
+5. Enable webhook events: `installation` and `installation_repositories`.
+6. Grant permissions: Repository metadata read, Issues read/write.
+7. Generate a private key.
+8. Add the Railway variables above without exposing their values.
+9. Install the app on a dedicated test repository.
+10. Use Connect GitHub from an AISwarmQA completed audit and verify repository sync.
+
+Current blockers before declaring production-ready:
+
+- No GitHub App credentials are configured locally or in Railway.
+- The app still uses the local development owner/workspace model. Supabase Auth session verification and workspace membership enforcement are required before real multi-user production use.
+- Durable screenshot storage is not complete. Evidence fields now support public evidence IDs and revocation, but production should back them with private Supabase Storage before relying on long-lived screenshot links in GitHub issues.
+- Missing label creation is not automatic in this phase; the preview identifies missing labels and requires future explicit per-label approval UI.
+
 ## Production Migration Result
 
 On 2026-07-26, the production database was verified as a fresh Supabase PostgreSQL database before migration:

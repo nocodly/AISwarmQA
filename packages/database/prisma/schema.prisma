@@ -93,6 +93,7 @@ model User {
   githubConnections GitHubConnection[]
   githubExportBatches GitHubExportBatch[]
   githubExports FindingGitHubExport[]
+  githubAuthStates GitHubAuthState[]
 }
 
 model Organization {
@@ -105,6 +106,7 @@ model Organization {
   members           OrganizationMember[]
   projects          Project[]
   githubConnections GitHubConnection[]
+  githubAuthStates  GitHubAuthState[]
 }
 
 model OrganizationMember {
@@ -395,10 +397,15 @@ model FindingEvidence {
   type      String
   content   String?
   localPath String?
+  publicEvidenceId String? @unique
+  externalSharingEnabled Boolean @default(false)
+  revokedAt DateTime?
   metadata  Json
   createdAt DateTime @default(now())
 
   finding Finding @relation(fields: [findingId], references: [id], onDelete: Cascade)
+
+  @@index([publicEvidenceId])
 }
 
 model Report {
@@ -442,6 +449,23 @@ model GitHubConnection {
   @@index([userId])
 }
 
+model GitHubAuthState {
+  id              String   @id @default(cuid())
+  stateHash       String   @unique
+  userId          String
+  workspaceId     String
+  returnUrl       String
+  expiresAt       DateTime
+  consumedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([expiresAt])
+}
+
 model GitHubRepository {
   id                  String   @id @default(cuid())
   githubConnectionId  String
@@ -452,6 +476,7 @@ model GitHubRepository {
   defaultBranch       String?
   private             Boolean  @default(false)
   issuesEnabled       Boolean  @default(false)
+  archived            Boolean  @default(false)
   lastSyncedAt        DateTime?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -465,6 +490,16 @@ model GitHubRepository {
   @@index([fullName])
 }
 
+model GitHubWebhookDelivery {
+  id           String   @id @default(cuid())
+  deliveryId   String   @unique
+  event        String
+  action       String?
+  processedAt  DateTime @default(now())
+
+  @@index([event])
+}
+
 model GitHubExportBatch {
   id              String                  @id @default(cuid())
   auditId         String
@@ -475,6 +510,7 @@ model GitHubExportBatch {
   failedCount     Int                     @default(0)
   skippedCount    Int                     @default(0)
   status          GitHubExportBatchStatus @default(QUEUED)
+  exportOptionsJson Json                   @default("{}")
   createdByUserId String
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
