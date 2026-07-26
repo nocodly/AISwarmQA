@@ -1,0 +1,21 @@
+FROM mcr.microsoft.com/playwright:v1.61.1-noble
+
+WORKDIR /app
+
+ENV CI=true
+ENV NODE_ENV=production
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json .npmrc ./
+COPY apps ./apps
+COPY packages ./packages
+COPY tests/fixtures/sites ./tests/fixtures/sites
+COPY tests/smoke ./tests/smoke
+
+RUN corepack enable \
+  && corepack prepare pnpm@10.0.0 --activate \
+  && pnpm install --frozen-lockfile \
+  && pnpm --filter @ai-swarm-qa/database db:generate \
+  && pnpm --filter @ai-swarm-qa/worker build
+
+CMD ["pnpm", "--filter", "@ai-swarm-qa/worker", "exec", "tsx", "src/index.ts"]
