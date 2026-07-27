@@ -70,7 +70,7 @@ export function MarketingShell({ children }: { children: ReactNode }) {
           <Link href={"/pricing" as Route}>Pricing</Link>
         </nav>
         <div className="site-actions">
-          <Link className="ghost-link" href="/dashboard">
+          <Link className="ghost-link" href={"/auth" as Route}>
             Sign in
           </Link>
           <Link className="cta-button small" href="/projects/new">
@@ -82,8 +82,8 @@ export function MarketingShell({ children }: { children: ReactNode }) {
             <Menu aria-hidden="true" size={22} />
           </summary>
           <div>
-            {[...navGroups.flatMap((group) => group.links), { href: "/docs", label: "Docs" }, { href: "/pricing", label: "Pricing" }, { href: "/dashboard", label: "Sign in" }].map((link) => (
-              <Link href={link.href as Route} key={link.href}>
+            {[...navGroups.flatMap((group) => group.links), { href: "/docs", label: "Docs" }, { href: "/pricing", label: "Pricing" }, { href: "/auth", label: "Sign in" }].map((link, index) => (
+              <Link href={link.href as Route} key={`${link.href}-${link.label}-${index}`}>
                 {link.label}
               </Link>
             ))}

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { Route } from "next";
 import { AlertCircle, FileSearch, GitBranch, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -65,10 +66,15 @@ export function DashboardClient() {
 
       {loading ? <section className="panel">Loading dashboard.</section> : null}
       {error ? (
-        <section className="panel">
+        <section className="panel auth-required-panel">
           <p className="error-text">
             <AlertCircle aria-hidden="true" size={16} /> {error}
           </p>
+          {error.toLowerCase().includes("sign in") ? (
+            <Link className="cta-button small" href={"/auth" as Route}>
+              Create account or sign in
+            </Link>
+          ) : null}
         </section>
       ) : null}
 
