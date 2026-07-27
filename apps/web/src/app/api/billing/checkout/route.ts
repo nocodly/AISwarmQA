@@ -13,7 +13,7 @@ const checkoutSchema = z.object({
 export async function POST(request: Request) {
   try {
     const config = readRuntimeConfig();
-    assertRateLimit(request, "stripe-checkout", config.rateLimitStripeCheckoutMax);
+    await assertRateLimit(request, "stripe-checkout", config.rateLimitStripeCheckoutMax);
     const actor = await requireAuth(request);
     await assertWorkspacePermission({ workspaceId: actor.workspaceId, userId: actor.userId, permission: "billing:manage" });
     const body = checkoutSchema.parse(await request.json());

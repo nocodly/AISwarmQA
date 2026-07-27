@@ -14,7 +14,7 @@ const invitationSchema = z.object({
 export async function POST(request: Request) {
   try {
     const config = readRuntimeConfig();
-    assertRateLimit(request, "workspace-invitation", config.rateLimitInvitationMax);
+    await assertRateLimit(request, "workspace-invitation", config.rateLimitInvitationMax);
     const actor = await requireAuth(request);
     const body = invitationSchema.parse(await request.json());
     const workspace = await prisma.organization.findUnique({ where: { id: actor.workspaceId } });

@@ -8,7 +8,7 @@ import { createBillingPortalSession } from "@/lib/stripe";
 export async function POST(request: Request) {
   try {
     const config = readRuntimeConfig();
-    assertRateLimit(request, "stripe-portal", config.rateLimitStripeCheckoutMax);
+    await assertRateLimit(request, "stripe-portal", config.rateLimitStripeCheckoutMax);
     const actor = await requireAuth(request);
     await assertWorkspacePermission({ workspaceId: actor.workspaceId, userId: actor.userId, permission: "billing:manage" });
     const session = await createBillingPortalSession({ workspaceId: actor.workspaceId });

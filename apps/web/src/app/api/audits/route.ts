@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     const actor = await requireAuth(request);
     const body = auditRequestSchema.parse(await request.json());
     const config = readRuntimeConfig();
-    assertRateLimit(request, "audit-create", config.rateLimitAuditCreateMax);
+    await assertRateLimit(request, "audit-create", config.rateLimitAuditCreateMax);
     const targetUrl = assertAuditUrlAllowed(body.url, {
       mode: process.env.NODE_ENV === "production" ? "production" : "development",
       devAllowedHosts: config.auditDevAllowedHosts

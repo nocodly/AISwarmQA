@@ -211,6 +211,8 @@ model Audit {
   completedAt   DateTime?
   failedAt      DateTime?
   failureReason String?
+  cancelRequestedAt DateTime?
+  cancelReason String?
   actualCost    Decimal     @default(0)
   browserDurationMs Int?
   executionSummary Json?
@@ -471,6 +473,8 @@ model FindingEvidence {
   revokedAt DateTime?
   expiresAt DateTime?
   deletionQueuedAt DateTime?
+  deletionAttemptCount Int @default(0)
+  deletionLastAttemptAt DateTime?
   deletedAt DateTime?
   deletionError String?
   metadata  Json

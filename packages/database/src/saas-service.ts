@@ -402,15 +402,76 @@ export async function requestWorkspaceDeletion(input: { workspaceId: string; act
   });
 }
 
-export async function listEvidenceDueForDeletion(now = new Date()) {
-  return prisma.findingEvidence.findMany({
+export async function claimEvidenceDueForDeletion(input: { now?: Date; batchSize?: number } = {}) {
+  const now = input.now ?? new Date();
+  const batchSize = Math.min(Math.max(input.batchSize ?? 50, 1), 250);
+  const candidates = await prisma.findingEvidence.findMany({
     where: {
       expiresAt: { lte: now },
       deletedAt: null,
-      deletionQueuedAt: null
+      OR: [{ deletionQueuedAt: null }, { deletionQueuedAt: { lt: new Date(now.getTime() - 60 * 60 * 1000) } }]
     },
-    take: 100,
-    orderBy: { expiresAt: "asc" }
+    take: batchSize,
+    orderBy: { expiresAt: "asc" },
+    select: {
+      id: true,
+      storageProvider: true,
+      storageBucket: true,
+      storagePath: true,
+      publicEvidenceId: true,
+      externalSharingEnabled: true,
+      deletionAttemptCount: true
+    }
+  });
+  if (candidates.length === 0) return [];
+
+  const claimed = [];
+  for (const candidate of candidates) {
+    const updated = await prisma.findingEvidence.updateMany({
+      where: {
+        id: candidate.id,
+        deletedAt: null,
+        OR: [{ deletionQueuedAt: null }, { deletionQueuedAt: { lt: new Date(now.getTime() - 60 * 60 * 1000) } }]
+      },
+      data: {
+        deletionQueuedAt: now,
+        deletionLastAttemptAt: now,
+        deletionAttemptCount: { increment: 1 },
+        revokedAt: now,
+        externalSharingEnabled: false,
+        deletionError: null
+      }
+    });
+    if (updated.count === 1) {
+      claimed.push(candidate);
+    }
+  }
+  return claimed;
+}
+
+export async function listEvidenceDueForDeletion(now = new Date()) {
+  return claimEvidenceDueForDeletion({ now, batchSize: 100 });
+}
+
+export async function markEvidenceDeleted(evidenceId: string) {
+  return prisma.findingEvidence.update({
+    where: { id: evidenceId },
+    data: {
+      deletedAt: new Date(),
+      deletionError: null,
+      externalSharingEnabled: false
+    }
+  });
+}
+
+export async function markEvidenceDeletionFailed(input: { evidenceId: string; errorMessage: string }) {
+  return prisma.findingEvidence.update({
+    where: { id: input.evidenceId },
+    data: {
+      deletionQueuedAt: null,
+      deletionLastAttemptAt: new Date(),
+      deletionError: input.errorMessage.slice(0, 1000)
+    }
   });
 }
 

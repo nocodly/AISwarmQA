@@ -85,6 +85,19 @@ export class SupabaseStorageProvider implements StorageProvider {
       contentType: response.headers.get("content-type") ?? "application/octet-stream"
     };
   }
+
+  async deleteObject(key: string): Promise<void> {
+    const response = await fetch(`${this.config.supabaseUrl.replace(/\/$/, "")}/storage/v1/object/${encodeURIComponent(this.config.bucket)}/${key.replace(/^\/+/, "")}`, {
+      method: "DELETE",
+      headers: {
+        authorization: `Bearer ${this.config.serviceKey}`,
+        apikey: this.config.serviceKey
+      }
+    });
+    if (!response.ok && response.status !== 404) {
+      throw new StorageError("SUPABASE_DELETE_FAILED", `Supabase Storage delete failed with HTTP ${response.status}.`);
+    }
+  }
 }
 
 export function buildEvidenceStorageKey(input: { workspaceId: string; auditId: string; findingId: string; evidenceId: string; extension?: string }) {

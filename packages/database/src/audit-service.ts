@@ -23,7 +23,7 @@ import {
   type BrowserSwarmTerminalReason,
   type SwarmSharedState
 } from "@ai-swarm-qa/shared";
-import { Prisma } from "@prisma/client";
+import { Prisma, type MissionStatus } from "@prisma/client";
 import { prisma } from "./client";
 
 const statusToPrisma = {
@@ -374,6 +374,107 @@ export async function transitionAuditStatus(
   });
 }
 
+export async function requestAuditCancellation(input: { auditId: string; workspaceId: string; actorUserId: string; reason?: string | null }) {
+  const audit = await prisma.audit.findFirst({
+    where: { id: input.auditId, project: { organizationId: input.workspaceId } },
+    include: { missions: true }
+  });
+  if (!audit) {
+    throw new DomainError("AUDIT_ACCESS_DENIED", "Audit is outside the current workspace.", "Audit is not available.");
+  }
+
+  const status = toSharedAuditStatus(audit.status);
+  if (status === "completed" || status === "failed" || status === "cancelled") {
+    return { audit, status, terminal: true, cancellationRequested: Boolean(audit.cancelRequestedAt) };
+  }
+
+  const now = new Date();
+  const reason = input.reason?.trim().slice(0, 500) || "Cancelled by workspace member.";
+  const cancelledMissionStatuses: MissionStatus[] = ["CREATED", "QUEUED"];
+  const updated = await prisma.$transaction(async (tx) => {
+    await tx.workspaceAuditLog.create({
+      data: {
+        workspaceId: input.workspaceId,
+        actorUserId: input.actorUserId,
+        action: "audit.cancel_requested",
+        metadata: { auditId: input.auditId, reason }
+      }
+    });
+    await tx.mission.updateMany({
+      where: {
+        auditId: input.auditId,
+        status: { in: cancelledMissionStatuses }
+      },
+      data: {
+        status: "CANCELLED",
+        completedAt: now,
+        failureReason: reason
+      }
+    });
+    const runningMissions = audit.missions.filter((mission) => mission.status === "RUNNING").length;
+    if (runningMissions === 0) {
+      return tx.audit.update({
+        where: { id: input.auditId },
+        data: {
+          status: "CANCELLED",
+          completedAt: now,
+          cancelRequestedAt: now,
+          cancelReason: reason
+        }
+      });
+    }
+    return tx.audit.update({
+      where: { id: input.auditId },
+      data: {
+        cancelRequestedAt: now,
+        cancelReason: reason
+      }
+    });
+  });
+
+  return {
+    audit: updated,
+    status: toSharedAuditStatus(updated.status),
+    terminal: toSharedAuditStatus(updated.status) === "cancelled",
+    cancellationRequested: true
+  };
+}
+
+export async function getAuditCancellationState(auditId: string) {
+  const audit = await prisma.audit.findUnique({
+    where: { id: auditId },
+    select: { id: true, status: true, cancelRequestedAt: true, cancelReason: true }
+  });
+  if (!audit) {
+    throw new DomainError("AUDIT_NOT_FOUND", `Audit not found: ${auditId}`, "Audit was not found.");
+  }
+  return {
+    requested: Boolean(audit.cancelRequestedAt) || audit.status === "CANCELLED",
+    terminal: audit.status === "CANCELLED",
+    reason: audit.cancelReason ?? "Audit cancellation was requested."
+  };
+}
+
+export async function markMissionCancelled(missionId: string, reason: string) {
+  return transitionMissionStatus(missionId, "cancelled", { failureReason: reason });
+}
+
+export async function finalizeCancelledAudit(auditId: string, reason: string) {
+  const audit = await prisma.audit.findUnique({ where: { id: auditId }, include: { missions: true } });
+  if (!audit) {
+    throw new DomainError("AUDIT_NOT_FOUND", `Audit not found: ${auditId}`, "Audit was not found.");
+  }
+  const status = toSharedAuditStatus(audit.status);
+  if (status === "cancelled") return { finalized: true, status };
+  if (status === "completed" || status === "failed") return { finalized: true, status };
+  await prisma.mission.updateMany({
+    where: { auditId, status: { in: ["CREATED", "QUEUED", "RUNNING"] } },
+    data: { status: "CANCELLED", completedAt: new Date(), failureReason: reason }
+  });
+  await transitionAuditStatus(auditId, "cancelled", { failureReason: reason });
+  return { finalized: true, status: "cancelled" as const };
+}
+
 export async function markMissionRunning(missionId: string) {
   return transitionMissionStatus(missionId, "running", { incrementAttempt: true });
 }
@@ -410,7 +511,7 @@ export async function transitionMissionStatus(
     data: {
       status: missionStatusToPrisma[nextStatus],
       ...(transition.timestampField ? { [transition.timestampField]: now } : {}),
-      ...(nextStatus === "failed" ? { completedAt: now } : {}),
+      ...(nextStatus === "failed" || nextStatus === "cancelled" ? { completedAt: now } : {}),
       ...(options.failureReason ? { failureReason: options.failureReason } : {}),
       ...(options.resultSummary ? { resultSummary: options.resultSummary } : {}),
       ...(options.incrementAttempt ? { attemptCount: { increment: 1 } } : {})
@@ -1026,6 +1127,8 @@ export async function getAuditSummary(auditId: string, options: { workspaceId?: 
       completedAt: audit.completedAt?.toISOString() ?? null,
       failedAt: audit.failedAt?.toISOString() ?? null,
       failureReason: audit.failureReason,
+      cancelRequestedAt: audit.cancelRequestedAt?.toISOString() ?? null,
+      cancelReason: audit.cancelReason,
       browserDurationMs: audit.browserDurationMs,
       findingCount: audit.findings.length
     },

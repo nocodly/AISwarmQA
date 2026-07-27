@@ -12,6 +12,8 @@ type AuditSummary = {
   completedAt: string | null;
   failedAt: string | null;
   failureReason: string | null;
+  cancelRequestedAt: string | null;
+  cancelReason: string | null;
   browserDurationMs: number | null;
   findingCount: number;
 };
@@ -261,6 +263,8 @@ export function AuditDetails({ auditId }: { auditId: string }) {
   const [githubBatch, setGitHubBatch] = useState<GitHubExportBatch | null>(null);
   const [githubMessage, setGitHubMessage] = useState<string | null>(null);
   const [includeExternalEvidence, setIncludeExternalEvidence] = useState(false);
+  const [cancelMessage, setCancelMessage] = useState<string | null>(null);
+  const [canceling, setCanceling] = useState(false);
 
   const audit = data?.audit ?? null;
   const isTerminal = useMemo(() => (audit ? terminalStatuses.has(audit.status) : false), [audit]);
@@ -402,6 +406,35 @@ export function AuditDetails({ auditId }: { auditId: string }) {
     setGitHubMessage("Report link copied.");
   }
 
+  async function cancelAudit() {
+    if (!window.confirm("Cancel this audit? Running missions will stop at the next safe checkpoint.")) {
+      return;
+    }
+    setCanceling(true);
+    setCancelMessage(null);
+    try {
+      const response = await fetch(`/api/audits/${auditId}/cancel`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ reason: "Cancelled from audit details." })
+      });
+      const body = await response.json();
+      if (!response.ok) {
+        setCancelMessage(body.error?.message ?? "Audit cancellation could not be requested.");
+        return;
+      }
+      setCancelMessage(body.terminal ? "Audit cancelled." : "Cancellation requested. Running work will stop shortly.");
+      const auditResponse = await fetch(`/api/audits/${auditId}`, { cache: "no-store" });
+      if (auditResponse.ok) {
+        setData((await auditResponse.json()) as AuditResponse);
+      }
+    } catch {
+      setCancelMessage("Audit cancellation could not be requested.");
+    } finally {
+      setCanceling(false);
+    }
+  }
+
   async function previewGitHubExport() {
     setGitHubMessage(null);
     setGitHubPreview(null);
@@ -539,6 +572,7 @@ export function AuditDetails({ auditId }: { auditId: string }) {
         {audit.status === "failed" ? (
           <p className="error-text">{audit.failureReason ?? "The audit failed. Check worker logs and retry."}</p>
         ) : null}
+        {audit.cancelRequestedAt ? <p>Cancellation requested: {formatDate(audit.cancelRequestedAt)}</p> : null}
       </section>
 
       <section className="panel" style={{ marginTop: 16 }}>
@@ -860,7 +894,11 @@ export function AuditDetails({ auditId }: { auditId: string }) {
           <button type="button" onClick={() => void shareReport()}>
             Share report
           </button>
+          <button type="button" onClick={() => void cancelAudit()} disabled={isTerminal || canceling}>
+            {canceling ? "Cancelling" : "Cancel audit"}
+          </button>
         </div>
+        {cancelMessage ? <p>{cancelMessage}</p> : null}
         <div className="mission-list" style={{ marginTop: 12 }}>
           <article className="mission-row">
             <div>

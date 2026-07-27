@@ -8,7 +8,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ publ
   try {
     const { publicEvidenceId } = await params;
     const config = readRuntimeConfig();
-    assertRateLimit(request, "evidence-public", config.rateLimitEvidenceMax);
+    await assertRateLimit(request, "evidence-public", config.rateLimitEvidenceMax);
     if (!config.supabaseUrl || !config.supabaseServiceRoleKey) {
       return Response.json({ error: { code: "EVIDENCE_STORAGE_NOT_CONFIGURED", message: "Evidence storage is not configured." } }, { status: 503 });
     }

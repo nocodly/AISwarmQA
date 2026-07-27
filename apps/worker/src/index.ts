@@ -16,13 +16,18 @@ import { readRuntimeConfig } from "@ai-swarm-qa/config";
 import {
   completeBrowserSessionWithDuration,
   createBrowserSession,
+  claimEvidenceDueForDeletion,
   finalizeAuditIfReady,
+  finalizeCancelledAudit,
   getAuditWorkspaceId,
+  getAuditCancellationState,
   finalizeGitHubExportBatch,
   getAuditSummary,
   getGitHubExportBatch,
   listUnstoredLocalEvidenceForAudit,
   markEvidenceStored,
+  markEvidenceDeleted,
+  markEvidenceDeletionFailed,
   markEvidenceRetentionForAudit,
   markFindingGitHubExportCreated,
   markFindingGitHubExportCreating,
@@ -30,6 +35,7 @@ import {
   markFindingGitHubExportSkipped,
   markGitHubExportBatchRunning,
   markMissionCompleted,
+  markMissionCancelled,
   markMissionFailed,
   markMissionQueued,
   markMissionRunning,
@@ -42,7 +48,15 @@ import {
   type PersistableFinding
 } from "@ai-swarm-qa/database";
 import { buildIssueDraft, createGitHubProvider, extractFindingMarker, GitHubProviderError } from "@ai-swarm-qa/github";
-import { createAuditQueue, enqueueMission, GITHUB_EXPORT_QUEUE_NAME, type AuditQueueJob } from "@ai-swarm-qa/queue";
+import {
+  createAuditQueue,
+  createRetentionCleanupQueue,
+  enqueueMission,
+  GITHUB_EXPORT_QUEUE_NAME,
+  RETENTION_CLEANUP_QUEUE_NAME,
+  scheduleRetentionCleanup,
+  type AuditQueueJob
+} from "@ai-swarm-qa/queue";
 import { buildEvidenceStorageKey, detectEvidenceContentType, extensionForContentType, SupabaseStorageProvider } from "@ai-swarm-qa/storage";
 import {
   buildPlannerInput,
@@ -107,6 +121,7 @@ type MissionContext = {
   page: Page;
   browser: Browser;
   artifactDir: string;
+  checkCancellation: () => Promise<void>;
 };
 
 const AUDIT_QUEUE_NAME = "audit-missions";
@@ -124,6 +139,20 @@ function safeFailureMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unknown worker failure.";
 }
 
+class AuditCancelledError extends Error {
+  constructor(readonly reason: string) {
+    super(reason);
+    this.name = "AuditCancelledError";
+  }
+}
+
+async function throwIfAuditCancelled(auditId: string) {
+  const cancellation = await getAuditCancellationState(auditId);
+  if (cancellation.requested) {
+    throw new AuditCancelledError(cancellation.reason);
+  }
+}
+
 function finding(
   context: MissionContext,
   input: Omit<PersistableFinding, "browser" | "viewport" | "sourceMissionId" | "sourceMissionType">
@@ -138,10 +167,11 @@ function finding(
 }
 
 async function gotoTarget(context: MissionContext) {
+  await context.checkCancellation();
   return context.page.goto(context.targetUrl, {
     waitUntil: "networkidle",
     timeout: Math.min(context.definition.timeoutMs, 20000)
-  });
+  }).finally(() => context.checkCancellation());
 }
 
 async function collectPlanningSnapshot(input: { targetUrl: string }): Promise<PlanningSnapshot> {
@@ -718,9 +748,11 @@ async function runPlanningJob(job: Job<AuditQueueJob>) {
   const warnings: string[] = [];
 
   log("planning_started", { auditId: payload.auditId, mode: config.auditPlanningMode });
+  await throwIfAuditCancelled(payload.auditId);
 
   try {
     snapshot = await collectPlanningSnapshot({ targetUrl: payload.targetUrl });
+    await throwIfAuditCancelled(payload.auditId);
     log("planning_snapshot_completed", {
       auditId: payload.auditId,
       links: snapshot.navigationLinks.length,
@@ -841,6 +873,7 @@ async function runPlanningJob(job: Job<AuditQueueJob>) {
   });
 
   const missions = await persistMissionPlan({ auditId: payload.auditId, missions: merged.finalMissions });
+  await throwIfAuditCancelled(payload.auditId);
   await transitionAuditStatus(payload.auditId, "queued");
   const queue = createAuditQueue(config.redisUrl);
   try {
@@ -896,8 +929,10 @@ async function runMissionJob(job: Job<ExecuteMissionJob>) {
 
   try {
     await getAuditSummary(payload.auditId);
+    await throwIfAuditCancelled(payload.auditId);
     await transitionAuditStatus(payload.auditId, "running");
     await markMissionRunning(payload.missionId);
+    await throwIfAuditCancelled(payload.auditId);
 
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext({ viewport: definition.viewport });
@@ -922,10 +957,12 @@ async function runMissionJob(job: Job<ExecuteMissionJob>) {
         definition,
         page,
         browser,
-        artifactDir
+        artifactDir,
+        checkCancellation: () => throwIfAuditCancelled(payload.auditId)
       }),
       definition.timeoutMs
     );
+    await throwIfAuditCancelled(payload.auditId);
     finalUrl = page.url();
     await persistFindings(payload.auditId, dedupeByFingerprint(result.findings));
     await uploadAuditEvidence(payload.auditId);
@@ -954,6 +991,32 @@ async function runMissionJob(job: Job<ExecuteMissionJob>) {
     }
     return { auditId: payload.auditId, missionId: payload.missionId, status: "completed", findings: result.findings.length };
   } catch (error) {
+    if (error instanceof AuditCancelledError) {
+      const reason = error.reason;
+      log("mission_cancelled", { auditId: payload.auditId, missionId: payload.missionId, missionType: payload.missionType });
+      if (browserSessionId) {
+        await completeBrowserSessionWithDuration({
+          browserSessionId,
+          browserDurationMs: Date.now() - startedAt,
+          failed: true,
+          ...(finalUrl ? { finalUrl } : {})
+        }).catch(() => undefined);
+      }
+      await markMissionCancelled(payload.missionId, reason).catch(() => undefined);
+      const finalization = await finalizeCancelledAudit(payload.auditId, reason).catch(() => ({ finalized: false, status: "cancelled" as const }));
+      if (finalization.finalized && finalization.status === "cancelled") {
+        const workspaceId = await getAuditWorkspaceId(payload.auditId).catch(() => null);
+        if (workspaceId) {
+          await recordUsageEvent({
+            workspaceId,
+            auditId: payload.auditId,
+            type: "AUDIT_CANCELLED",
+            idempotencyKey: `audit-terminal:${payload.auditId}:cancelled`
+          }).catch((usageError) => logError("usage.audit_cancelled_failed", { auditId: payload.auditId, error: safeFailureMessage(usageError) }));
+        }
+      }
+      return { auditId: payload.auditId, missionId: payload.missionId, status: "cancelled" };
+    }
     const failureReason = safeFailureMessage(error);
     const finalAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? definition.maxAttempts);
     logError("mission_failed", {
@@ -1034,11 +1097,72 @@ async function uploadAuditEvidence(auditId: string) {
   }
 }
 
-async function runQueueJob(job: Job<AuditQueueJob>) {
-  if (job.name === "plan-audit") {
-    return runPlanningJob(job);
+async function runRetentionCleanupJob(job: Job<unknown>) {
+  const startedAt = Date.now();
+  if (!config.evidenceRetentionCleanupEnabled) {
+    log("retention.cleanup.skipped", { jobId: job.id, reason: "disabled" });
+    return { deletedCount: 0, failedCount: 0, skipped: true };
   }
-  return runMissionJob(job as Job<ExecuteMissionJob>);
+  if (!config.supabaseUrl || !config.supabaseServiceRoleKey) {
+    log("retention.cleanup.skipped", { jobId: job.id, reason: "supabase_storage_not_configured" });
+    return { deletedCount: 0, failedCount: 0, skipped: true };
+  }
+  const claimed = await claimEvidenceDueForDeletion({ batchSize: config.evidenceRetentionCleanupBatchSize });
+  let deletedCount = 0;
+  let failedCount = 0;
+  const providers = new Map<string, SupabaseStorageProvider>();
+
+  for (const evidence of claimed) {
+    if (evidence.storageProvider !== "supabase" || !evidence.storageBucket || !evidence.storagePath) {
+      await markEvidenceDeleted(evidence.id);
+      deletedCount += 1;
+      continue;
+    }
+    const providerKey = evidence.storageBucket;
+    const storage =
+      providers.get(providerKey) ??
+      new SupabaseStorageProvider({
+        supabaseUrl: config.supabaseUrl,
+        serviceKey: config.supabaseServiceRoleKey,
+        bucket: evidence.storageBucket,
+        maxBytes: config.evidenceMaxBytes
+      });
+    providers.set(providerKey, storage);
+    try {
+      await storage.deleteObject(evidence.storagePath);
+      await markEvidenceDeleted(evidence.id);
+      deletedCount += 1;
+    } catch (error) {
+      failedCount += 1;
+      await markEvidenceDeletionFailed({ evidenceId: evidence.id, errorMessage: safeFailureMessage(error) }).catch(() => undefined);
+      logError("retention.cleanup.evidence_failed", { evidenceId: evidence.id, error: safeFailureMessage(error) });
+    }
+  }
+
+  log("retention.cleanup.completed", {
+    jobId: job.id,
+    claimedCount: claimed.length,
+    deletedCount,
+    failedCount,
+    durationMs: Date.now() - startedAt
+  });
+  return { deletedCount, failedCount, claimedCount: claimed.length };
+}
+
+async function runQueueJob(job: Job<AuditQueueJob>) {
+  try {
+    if (job.name === "plan-audit") {
+      return runPlanningJob(job);
+    }
+    return runMissionJob(job as Job<ExecuteMissionJob>);
+  } catch (error) {
+    if (error instanceof AuditCancelledError) {
+      const auditId = job.data.auditId;
+      await finalizeCancelledAudit(auditId, error.reason).catch(() => undefined);
+      return { auditId, status: "cancelled" };
+    }
+    throw error;
+  }
 }
 
 const worker = new Worker<AuditQueueJob>(AUDIT_QUEUE_NAME, runQueueJob, {
@@ -1161,6 +1285,26 @@ const githubExportWorker = new Worker(GITHUB_EXPORT_QUEUE_NAME, runGitHubExportJ
   concurrency: 1
 });
 
+const retentionCleanupWorker = new Worker(RETENTION_CLEANUP_QUEUE_NAME, runRetentionCleanupJob, {
+  connection: { url: config.redisUrl },
+  concurrency: 1
+});
+
+async function ensureScheduledJobs() {
+  if (!config.evidenceRetentionCleanupEnabled) return;
+  const queue = createRetentionCleanupQueue(config.redisUrl);
+  try {
+    await scheduleRetentionCleanup(queue);
+    log("retention.cleanup.scheduled", { queue: RETENTION_CLEANUP_QUEUE_NAME });
+  } catch (error) {
+    logError("retention.cleanup.schedule_failed", { error: safeFailureMessage(error) });
+  } finally {
+    await queue.close().catch(() => undefined);
+  }
+}
+
+void ensureScheduledJobs();
+
 worker.on("completed", (job) => {
   log("worker_job_completed", {
     jobId: job.id,
@@ -1184,3 +1328,4 @@ worker.on("failed", (job, error) => {
 
 log("worker_started", { queue: AUDIT_QUEUE_NAME, concurrency: config.missionWorkerConcurrency });
 log("github_export_worker_started", { queue: GITHUB_EXPORT_QUEUE_NAME, concurrency: 1 });
+log("retention_cleanup_worker_started", { queue: RETENTION_CLEANUP_QUEUE_NAME, concurrency: 1 });

@@ -1,5 +1,25 @@
 # Current Task
 
+Continue Phase 8B: production commercial activation and operational completion.
+
+Status: In progress on 2026-07-27. Phase 8 SaaS foundation commit `1e37084` is local and ahead of `origin/main`. Stripe product/prices/Billing Portal/webhook were created for AISwarmQA Pro at $79/month and $790/year, and Stripe runtime variables were placed on Railway web only. New source changes add Redis-backed rate limiting, cooperative audit cancellation, and scheduled evidence retention cleanup.
+
+## Phase 8B Scope
+
+- Verify Stripe production configuration without printing secrets.
+- Validate and apply additive SaaS migrations.
+- Deploy Phase 8 web and worker after local validation.
+- Complete operational controls for cancellation, retention cleanup, and distributed rate limiting.
+- Run production billing, onboarding, invitation, data export, observability, and regression checks where configured.
+
+## Phase 8B Safety Notes
+
+- Do not print Stripe, Railway, Supabase, GitHub, Anthropic, Resend, or Sentry secrets.
+- Stripe secrets belong on the web service only.
+- Worker needs Redis, database, Supabase Storage, GitHub App, Anthropic, and existing audit runtime variables, but not Stripe runtime secrets.
+- Do not run destructive production database operations.
+- Legal pages remain placeholders and require professional review before public launch.
+
 Continue Phase 7C: Supabase Auth, durable evidence storage, and GitHub App activation gate.
 
 Status: In progress on 2026-07-27; local typecheck passed after additive auth/storage implementation. Production deployment and GitHub App activation still require full validation and configured GitHub App variables.

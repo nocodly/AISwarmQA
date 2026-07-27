@@ -125,6 +125,9 @@ export const runtimeConfigSchema = z.object({
   rateLimitEvidenceMax: z.number().int().min(1).max(10000),
   rateLimitInvitationMax: z.number().int().min(1).max(1000),
   rateLimitStripeCheckoutMax: z.number().int().min(1).max(1000),
+  evidenceRetentionCleanupEnabled: z.boolean(),
+  evidenceRetentionCleanupBatchSize: z.number().int().min(1).max(250),
+  evidenceRetentionCleanupLockMs: z.number().int().min(1000).max(60 * 60 * 1000),
   planOverridesJson: z.string().optional()
 }).superRefine((config, context) => {
   if (config.autonomousMaxProviderCalls > config.autonomousMaxSteps) {
@@ -459,6 +462,9 @@ export function readRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
     rateLimitEvidenceMax: Number(loadedEnv.RATE_LIMIT_EVIDENCE_MAX ?? 120),
     rateLimitInvitationMax: Number(loadedEnv.RATE_LIMIT_INVITATION_MAX ?? 20),
     rateLimitStripeCheckoutMax: Number(loadedEnv.RATE_LIMIT_STRIPE_CHECKOUT_MAX ?? 10),
+    evidenceRetentionCleanupEnabled: (loadedEnv.EVIDENCE_RETENTION_CLEANUP_ENABLED ?? "true") === "true",
+    evidenceRetentionCleanupBatchSize: Number(loadedEnv.EVIDENCE_RETENTION_CLEANUP_BATCH_SIZE ?? 50),
+    evidenceRetentionCleanupLockMs: Number(loadedEnv.EVIDENCE_RETENTION_CLEANUP_LOCK_MS ?? 10 * 60 * 1000),
     planOverridesJson: loadedEnv.PLAN_OVERRIDES_JSON || undefined
   });
 

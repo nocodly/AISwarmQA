@@ -11,6 +11,7 @@ import {
 
 export const AUDIT_QUEUE_NAME = "audit-missions";
 export const GITHUB_EXPORT_QUEUE_NAME = "github-export";
+export const RETENTION_CLEANUP_QUEUE_NAME = "retention-cleanup";
 
 export type AuditQueueJob = PlanAuditJob | ExecuteMissionJob;
 
@@ -47,6 +48,31 @@ export async function enqueueGitHubExport(queue: Queue<GitHubExportJob>, job: Gi
     removeOnFail: 100
   });
   return queued.id ?? parsed.batchId;
+}
+
+export type RetentionCleanupJob = {
+  requestedAt: string;
+  reason: "scheduled" | "manual";
+};
+
+export function createRetentionCleanupQueue(redisUrl: string): Queue<RetentionCleanupJob> {
+  return new Queue<RetentionCleanupJob>(RETENTION_CLEANUP_QUEUE_NAME, {
+    connection: { url: redisUrl }
+  });
+}
+
+export async function scheduleRetentionCleanup(queue: Queue<RetentionCleanupJob>): Promise<string> {
+  const queued = await queue.add(
+    "retention-cleanup",
+    { requestedAt: new Date().toISOString(), reason: "scheduled" },
+    {
+      jobId: "retention-cleanup-daily",
+      repeat: { pattern: "17 3 * * *" },
+      removeOnComplete: 30,
+      removeOnFail: 30
+    }
+  );
+  return queued.id ?? "retention-cleanup-daily";
 }
 
 export async function enqueueMission(queue: Queue<AuditQueueJob>, job: ExecuteMissionJob): Promise<string> {

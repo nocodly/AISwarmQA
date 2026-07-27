@@ -19,7 +19,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const { id: auditId } = await params;
     const actor = await requireAuth(request);
     const config = readRuntimeConfig();
-    assertRateLimit(request, "github-export", config.rateLimitGitHubExportMax);
+    await assertRateLimit(request, "github-export", config.rateLimitGitHubExportMax);
     await assertCanUseGitHubExport({ workspaceId: actor.workspaceId, userId: actor.userId });
     const body = githubExportRequestSchema.parse(await request.json());
     const audit = await getCompletedAuditForExport(auditId, { workspaceId: actor.workspaceId });

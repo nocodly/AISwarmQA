@@ -4,7 +4,9 @@ Date: 2026-07-24
 
 The repository was cloned from `https://github.com/nocodly/AISwarmQA.git` and was empty at clone time.
 
-Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, and Phase 6 are implemented and verified.
+Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 production flows are implemented and verified.
+
+Phase 8 SaaS foundation is implemented in commit `1e37084`. Phase 8B operational hardening is now in progress: Stripe product/prices/webhook are configured externally, Redis-backed rate limiting, cooperative audit cancellation, and worker-driven evidence retention cleanup are being added before production deployment.
 
 Phase 7 GitHub export foundation is implemented in the local working tree but is not production verified yet. The code adds GitHub export database models, a `github-export` queue, mockable GitHub provider helpers, preview/export/status/retry APIs, audit results page actions, a guarded manual smoke script, and documentation. Real GitHub App credential setup, production migration approval, protected evidence serving, and a manual export against a dedicated GitHub test repository remain required.
 
