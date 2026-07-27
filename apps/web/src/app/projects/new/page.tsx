@@ -1,8 +1,9 @@
 import { AuditForm } from "../../AuditForm";
+import { AppShell } from "../../../components/AppShell";
 
 export default function NewAuditPage() {
   return (
-    <>
+    <AppShell>
       <header className="page-header">
         <div>
           <div className="eyebrow">New Audit</div>
@@ -11,6 +12,6 @@ export default function NewAuditPage() {
         </div>
       </header>
       <AuditForm />
-    </>
+    </AppShell>
   );
 }

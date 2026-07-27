@@ -1,5 +1,10 @@
+import { AppShell } from "../../components/AppShell";
 import { OnboardingClient } from "./OnboardingClient";
 
 export default function OnboardingPage() {
-  return <OnboardingClient />;
+  return (
+    <AppShell>
+      <OnboardingClient />
+    </AppShell>
+  );
 }

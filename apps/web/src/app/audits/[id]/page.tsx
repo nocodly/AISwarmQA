@@ -1,10 +1,11 @@
+import { AppShell } from "../../../components/AppShell";
 import { AuditDetails } from "./AuditDetails";
 
 export default async function AuditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   return (
-    <>
+    <AppShell>
       <header className="page-header">
         <div>
           <div className="eyebrow">Audit {id}</div>
@@ -13,6 +14,6 @@ export default async function AuditPage({ params }: { params: Promise<{ id: stri
         </div>
       </header>
       <AuditDetails auditId={id} />
-    </>
+    </AppShell>
   );
 }

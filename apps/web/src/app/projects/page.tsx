@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { AppShell } from "../../components/AppShell";
 
 export default function ProjectsPage() {
   return (
-    <>
+    <AppShell>
       <header className="page-header">
         <div>
           <div className="eyebrow">Projects</div>
@@ -18,6 +19,6 @@ export default function ProjectsPage() {
         <h2>Empty state</h2>
         <p>The first implementation pass creates the shape of this screen. Database-backed project lists come next.</p>
       </section>
-    </>
+    </AppShell>
   );
 }

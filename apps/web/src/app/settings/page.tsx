@@ -1,5 +1,10 @@
+import { AppShell } from "../../components/AppShell";
 import { SettingsClient } from "./SettingsClient";
 
 export default function SettingsPage() {
-  return <SettingsClient />;
+  return (
+    <AppShell>
+      <SettingsClient />
+    </AppShell>
+  );
 }
