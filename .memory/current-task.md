@@ -1,5 +1,31 @@
 # Current Task
 
+Continue Phase 7C: Supabase Auth, durable evidence storage, and GitHub App activation gate.
+
+Status: In progress on 2026-07-27; local typecheck passed after additive auth/storage implementation. Production deployment and GitHub App activation still require full validation and configured GitHub App variables.
+
+## Phase 7C Progress
+
+- Added Supabase Auth user mapping with `User.supabaseUserId`.
+- Added server-side auth resolution for Next API routes with production fail-closed behavior and explicit non-production dev actor fallback.
+- Added workspace-aware audit, finding, GitHub repository, export batch, and retry access checks.
+- Added Supabase Storage evidence metadata fields and additive migration `202607270001_phase_7c_auth_evidence_storage`.
+- Added private Supabase Storage provider using REST API, MIME validation, size limits, random object paths, and local-storage fallback behavior.
+- Added worker-side screenshot promotion to Supabase Storage after finding persistence; upload failures are logged and do not crash audits.
+- Added stable external evidence route `GET /evidence/:publicEvidenceId` that proxies private Supabase Storage through the server.
+- Added GitHub export opt-in flag `includeExternalEvidence`, default unchecked in UI, stored in export options, and used by worker issue rendering.
+- Updated `.env.example` with Supabase Auth/Storage placeholders only.
+- Verified `pnpm typecheck` passes.
+
+## Phase 7C Remaining Work
+
+- Run `pnpm lint`, `pnpm test`, and `pnpm build`.
+- Create or verify private Supabase Storage bucket `aiswarmqa-evidence`.
+- Apply production Prisma migration only after local validation.
+- Set Railway non-secret/secret variables for Supabase Auth/Storage if missing, without printing values.
+- Deploy web and worker, verify health/database/worker/Redis/evidence behavior.
+- GitHub App activation remains conditional until GitHub App variables are configured in Railway.
+
 Implement Phase 7: Production Audit Flow and GitHub Issue Export.
 
 Status: Conditionally implemented on 2026-07-26; production verification is blocked on explicit production migration approval and GitHub App credentials.

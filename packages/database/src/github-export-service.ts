@@ -58,11 +58,11 @@ export async function ensureMockGitHubRepository() {
   return { connection, repository };
 }
 
-export async function listGitHubRepositoriesForDevelopment(options: { includeMock?: boolean } = {}) {
+export async function listGitHubRepositoriesForDevelopment(options: { includeMock?: boolean; workspaceId?: string } = {}) {
   if (options.includeMock) {
     await ensureMockGitHubRepository();
   }
-  const { organization } = await getDevelopmentActor();
+  const { organization } = options.workspaceId ? { organization: { id: options.workspaceId } } : await getDevelopmentActor();
   return prisma.gitHubRepository.findMany({
     where: {
       githubConnection: {
@@ -75,7 +75,7 @@ export async function listGitHubRepositoriesForDevelopment(options: { includeMoc
   });
 }
 
-export async function getGitHubConnectionStatus(options: { includeMock?: boolean } = {}) {
+export async function getGitHubConnectionStatus(options: { includeMock?: boolean; workspaceId?: string } = {}) {
   const repositories = await listGitHubRepositoriesForDevelopment(options);
   return {
     connected: repositories.length > 0,
@@ -94,7 +94,7 @@ export async function getGitHubConnectionStatus(options: { includeMock?: boolean
   };
 }
 
-export async function getCompletedAuditForExport(auditId: string) {
+export async function getCompletedAuditForExport(auditId: string, options: { workspaceId?: string } = {}) {
   const audit = await prisma.audit.findUnique({
     where: { id: auditId },
     include: {
@@ -108,11 +108,14 @@ export async function getCompletedAuditForExport(auditId: string) {
   if (audit.status !== "COMPLETED") {
     throw new DomainError("AUDIT_NOT_COMPLETED", "Only completed audits can be exported.", "Only completed audits can be exported.");
   }
+  if (options.workspaceId && audit.project.organizationId !== options.workspaceId) {
+    throw new DomainError("AUDIT_ACCESS_DENIED", "Audit is outside the current workspace.", "Audit is not available.");
+  }
   return audit;
 }
 
-export async function getRepositoryForExport(repositoryId: string) {
-  const { organization } = await getDevelopmentActor();
+export async function getRepositoryForExport(repositoryId: string, options: { workspaceId?: string } = {}) {
+  const { organization } = options.workspaceId ? { organization: { id: options.workspaceId } } : await getDevelopmentActor();
   const repository = await prisma.gitHubRepository.findFirst({
     where: {
       id: repositoryId,
@@ -135,8 +138,9 @@ export async function getRepositoryForExport(repositoryId: string) {
   return repository;
 }
 
-export async function createGitHubAuthState(input: { stateHash: string; returnUrl: string; expiresAt: Date }) {
-  const { user, organization } = await getDevelopmentActor();
+export async function createGitHubAuthState(input: { stateHash: string; returnUrl: string; expiresAt: Date; userId?: string; workspaceId?: string }) {
+  const { user, organization } =
+    input.userId && input.workspaceId ? { user: { id: input.userId }, organization: { id: input.workspaceId } } : await getDevelopmentActor();
   return prisma.gitHubAuthState.create({
     data: {
       stateHash: input.stateHash,
@@ -288,7 +292,7 @@ export function toIssueFinding(finding: Awaited<ReturnType<typeof getCompletedAu
       id: evidence.publicEvidenceId ?? evidence.id,
       type: evidence.type,
       content: evidence.content,
-      localPath: evidence.localPath,
+      localPath: evidence.storagePath && evidence.externalSharingEnabled && !evidence.revokedAt ? evidence.storagePath : null,
       metadata: evidence.metadata
     }))
   };
@@ -304,14 +308,18 @@ export async function createGitHubExportBatch(input: {
     assignees?: string[];
     milestoneNumber?: number;
     createMissingLabels?: boolean;
+    includeExternalEvidence?: boolean;
   };
+  actor?: { userId: string; workspaceId: string };
 }) {
-  const { user, organization } = await getDevelopmentActor();
-  const audit = await getCompletedAuditForExport(input.auditId);
+  const { user, organization } = input.actor
+    ? { user: { id: input.actor.userId }, organization: { id: input.actor.workspaceId } }
+    : await getDevelopmentActor();
+  const audit = await getCompletedAuditForExport(input.auditId, { workspaceId: organization.id });
   if (audit.project.organizationId !== organization.id) {
     throw new DomainError("AUDIT_ACCESS_DENIED", "Audit is outside the current workspace.", "Audit is not available.");
   }
-  const repository = await getRepositoryForExport(input.repositoryId);
+  const repository = await getRepositoryForExport(input.repositoryId, { workspaceId: organization.id });
   const selectedFindings = audit.findings.filter((finding) => input.findingIds.includes(finding.id));
   if (selectedFindings.length !== input.findingIds.length) {
     throw new DomainError("FINDING_ACCESS_DENIED", "One or more findings are not part of this audit.", "One or more findings are not available.");
@@ -377,8 +385,8 @@ export async function listExistingGitHubExportsByIdempotencyKeys(idempotencyKeys
   });
 }
 
-export async function getGitHubExportBatch(batchId: string) {
-  const { organization } = await getDevelopmentActor();
+export async function getGitHubExportBatch(batchId: string, options: { workspaceId?: string } = {}) {
+  const { organization } = options.workspaceId ? { organization: { id: options.workspaceId } } : await getDevelopmentActor();
   const batch = await prisma.gitHubExportBatch.findFirst({
     where: {
       id: batchId,
@@ -468,8 +476,8 @@ export async function finalizeGitHubExportBatch(batchId: string) {
   });
 }
 
-export async function resetFailedGitHubExportsForRetry(batchId: string) {
-  const batch = await getGitHubExportBatch(batchId);
+export async function resetFailedGitHubExportsForRetry(batchId: string, options: { workspaceId?: string } = {}) {
+  const batch = await getGitHubExportBatch(batchId, options);
   await prisma.findingGitHubExport.updateMany({
     where: {
       batchId,

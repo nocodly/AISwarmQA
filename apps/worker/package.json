@@ -19,6 +19,7 @@
     "@ai-swarm-qa/github": "workspace:*",
     "@ai-swarm-qa/queue": "workspace:*",
     "@ai-swarm-qa/shared": "workspace:*",
+    "@ai-swarm-qa/storage": "workspace:*",
     "axe-core": "4.12.1",
     "bullmq": "5.80.10",
     "playwright": "1.61.1",

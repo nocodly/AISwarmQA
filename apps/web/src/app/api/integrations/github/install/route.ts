@@ -1,6 +1,8 @@
 import { readRuntimeConfig } from "@ai-swarm-qa/config";
 import { createGitHubAuthState } from "@ai-swarm-qa/database";
 import { hashState, newStateNonce, signGitHubState } from "@ai-swarm-qa/github";
+import { jsonErrorFromUnknown } from "../../../errors";
+import { requireAuth } from "@/lib/auth";
 
 function safeReturnUrl(request: Request): string {
   const requestUrl = new URL(request.url);
@@ -15,38 +17,45 @@ function safeReturnUrl(request: Request): string {
 }
 
 export async function GET(request: Request) {
-  const config = readRuntimeConfig();
-  const appConfigured = Boolean(config.githubAppId && config.githubAppClientId && config.githubAppClientSecret && config.githubAppPrivateKey);
-  if (!appConfigured || !config.githubAppSetupUrl) {
-    return Response.json(
-      {
-        error: {
-          code: "GITHUB_APP_NOT_CONFIGURED",
-          message: "GitHub App credentials and GITHUB_APP_SETUP_URL are required before installation."
-        }
-      },
-      { status: 503 }
-    );
-  }
-
-  const issuedAt = Date.now();
-  const state = signGitHubState({
-    secret: config.githubAppClientSecret!,
-    payload: {
-      nonce: newStateNonce(),
-      iat: issuedAt,
-      exp: issuedAt + 10 * 60 * 1000,
-      returnUrl: safeReturnUrl(request)
+  try {
+    const actor = await requireAuth(request);
+    const config = readRuntimeConfig();
+    const appConfigured = Boolean(config.githubAppId && config.githubAppClientId && config.githubAppClientSecret && config.githubAppPrivateKey);
+    if (!appConfigured || !config.githubAppSetupUrl) {
+      return Response.json(
+        {
+          error: {
+            code: "GITHUB_APP_NOT_CONFIGURED",
+            message: "GitHub App credentials and GITHUB_APP_SETUP_URL are required before installation."
+          }
+        },
+        { status: 503 }
+      );
     }
-  });
 
-  await createGitHubAuthState({
-    stateHash: hashState(state),
-    returnUrl: safeReturnUrl(request),
-    expiresAt: new Date(issuedAt + 10 * 60 * 1000)
-  });
+    const issuedAt = Date.now();
+    const state = signGitHubState({
+      secret: config.githubAppClientSecret!,
+      payload: {
+        nonce: newStateNonce(),
+        iat: issuedAt,
+        exp: issuedAt + 10 * 60 * 1000,
+        returnUrl: safeReturnUrl(request)
+      }
+    });
 
-  const setupUrl = new URL(config.githubAppSetupUrl);
-  setupUrl.searchParams.set("state", state);
-  return Response.redirect(setupUrl, 302);
+    await createGitHubAuthState({
+      stateHash: hashState(state),
+      returnUrl: safeReturnUrl(request),
+      expiresAt: new Date(issuedAt + 10 * 60 * 1000),
+      userId: actor.userId,
+      workspaceId: actor.workspaceId
+    });
+
+    const setupUrl = new URL(config.githubAppSetupUrl);
+    setupUrl.searchParams.set("state", state);
+    return Response.redirect(setupUrl, 302);
+  } catch (error) {
+    return jsonErrorFromUnknown(error);
+  }
 }

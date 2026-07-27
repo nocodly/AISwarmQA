@@ -1,4 +1,4 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import axe from "axe-core";
 import { Worker, type Job } from "bullmq";
@@ -20,6 +20,8 @@ import {
   finalizeGitHubExportBatch,
   getAuditSummary,
   getGitHubExportBatch,
+  listUnstoredLocalEvidenceForAudit,
+  markEvidenceStored,
   markFindingGitHubExportCreated,
   markFindingGitHubExportCreating,
   markFindingGitHubExportFailed,
@@ -38,6 +40,7 @@ import {
 } from "@ai-swarm-qa/database";
 import { buildIssueDraft, createGitHubProvider, extractFindingMarker, GitHubProviderError } from "@ai-swarm-qa/github";
 import { createAuditQueue, enqueueMission, GITHUB_EXPORT_QUEUE_NAME, type AuditQueueJob } from "@ai-swarm-qa/queue";
+import { buildEvidenceStorageKey, detectEvidenceContentType, extensionForContentType, SupabaseStorageProvider } from "@ai-swarm-qa/storage";
 import {
   buildPlannerInput,
   calculateModelCost,
@@ -922,6 +925,7 @@ async function runMissionJob(job: Job<ExecuteMissionJob>) {
     );
     finalUrl = page.url();
     await persistFindings(payload.auditId, dedupeByFingerprint(result.findings));
+    await uploadAuditEvidence(payload.auditId);
     await completeBrowserSessionWithDuration({ browserSessionId, finalUrl, browserDurationMs: Date.now() - startedAt });
     await markMissionCompleted(payload.missionId, {
       resultSummary: `${result.summary} Findings: ${result.findings.length}. Observations: ${result.observations}.`
@@ -966,6 +970,50 @@ async function runMissionJob(job: Job<ExecuteMissionJob>) {
   }
 }
 
+async function uploadAuditEvidence(auditId: string) {
+  if (!config.supabaseUrl || !config.supabaseServiceRoleKey) {
+    log("evidence.storage.skipped", { auditId, reason: "supabase_storage_not_configured" });
+    return;
+  }
+  const storage = new SupabaseStorageProvider({
+    supabaseUrl: config.supabaseUrl,
+    serviceKey: config.supabaseServiceRoleKey,
+    bucket: config.supabaseStorageBucket,
+    maxBytes: config.evidenceMaxBytes
+  });
+  const evidence = await listUnstoredLocalEvidenceForAudit(auditId);
+  for (const item of evidence) {
+    if (!item.localPath || item.type !== "screenshot") continue;
+    try {
+      const body = new Uint8Array(await readFile(item.localPath));
+      const contentType = detectEvidenceContentType(item.localPath, body);
+      const key = buildEvidenceStorageKey({
+        workspaceId: item.finding.audit.project.organizationId,
+        auditId,
+        findingId: item.findingId,
+        evidenceId: item.id,
+        extension: extensionForContentType(contentType)
+      });
+      const stored = await storage.putObject(key, body, contentType);
+      await markEvidenceStored({
+        evidenceId: item.id,
+        storageProvider: "supabase",
+        storageBucket: stored.bucket ?? config.supabaseStorageBucket,
+        storagePath: stored.key,
+        storageContentType: stored.contentType ?? contentType,
+        storageSizeBytes: stored.sizeBytes ?? body.byteLength
+      });
+      log("evidence.storage.uploaded", { auditId, evidenceId: item.id, storageProvider: "supabase" });
+    } catch (error) {
+      logError("evidence.storage.failed", {
+        auditId,
+        evidenceId: item.id,
+        error: safeFailureMessage(error)
+      });
+    }
+  }
+}
+
 async function runQueueJob(job: Job<AuditQueueJob>) {
   if (job.name === "plan-audit") {
     return runPlanningJob(job);
@@ -985,7 +1033,7 @@ async function runGitHubExportJob(job: Job<unknown>) {
   const provider = createGitHubProvider({ appConfigured, mock: config.githubExportMock, appId: config.githubAppId, privateKey: config.githubAppPrivateKey });
   log("github.export.started", { batchId: payload.batchId, workspaceId: payload.workspaceId });
   await markGitHubExportBatchRunning(payload.batchId);
-  const batch = await getGitHubExportBatch(payload.batchId);
+  const batch = await getGitHubExportBatch(payload.batchId, { workspaceId: payload.workspaceId });
   const [owner, repo] = batch.repository.fullName.split("/");
   if (!owner || !repo) {
     throw new Error("GitHub repository full name is invalid.");
@@ -1002,6 +1050,7 @@ async function runGitHubExportJob(job: Job<unknown>) {
       labelNames?: string[];
       assignees?: string[];
       milestoneNumber?: number;
+      includeExternalEvidence?: boolean;
     };
     const draft = buildIssueDraft({
       finding,
@@ -1010,7 +1059,7 @@ async function runGitHubExportJob(job: Job<unknown>) {
       ...(exportOptions.labelNames ? { labelNames: exportOptions.labelNames } : {}),
       ...(exportOptions.assignees ? { assignees: exportOptions.assignees } : {}),
       ...(typeof exportOptions.milestoneNumber === "number" ? { milestoneNumber: exportOptions.milestoneNumber } : {}),
-      evidenceBaseUrl: `${config.appUrl.replace(/\/$/, "")}/api/audits/${batch.auditId}/evidence`
+      ...(exportOptions.includeExternalEvidence ? { evidenceBaseUrl: `${config.appUrl.replace(/\/$/, "")}/evidence` } : {})
     });
     try {
       const marker = extractFindingMarker(draft.body);

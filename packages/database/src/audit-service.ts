@@ -144,6 +144,25 @@ export async function getOrCreateDevelopmentProject(targetUrl: string) {
   });
 }
 
+export async function getOrCreateWorkspaceProject(input: { workspaceId: string; targetUrl: string }) {
+  const existing = await prisma.project.findFirst({
+    where: {
+      organizationId: input.workspaceId,
+      targetUrl: input.targetUrl
+    }
+  });
+  if (existing) return existing;
+  const host = new URL(input.targetUrl).host;
+  return prisma.project.create({
+    data: {
+      organizationId: input.workspaceId,
+      name: host,
+      targetUrl: input.targetUrl,
+      verifiedAt: new Date()
+    }
+  });
+}
+
 export async function createAuditWithMission(input: {
   targetUrl: string;
   correlationId: string;
@@ -158,8 +177,11 @@ export async function createAuditRecord(input: {
   correlationId: string;
   maxSteps: number;
   maxCostUsd: number;
+  workspaceId?: string;
 }) {
-  const project = await getOrCreateDevelopmentProject(input.targetUrl);
+  const project = input.workspaceId
+    ? await getOrCreateWorkspaceProject({ workspaceId: input.workspaceId, targetUrl: input.targetUrl })
+    : await getOrCreateDevelopmentProject(input.targetUrl);
 
   return prisma.audit.create({
     data: {
@@ -178,11 +200,15 @@ export async function createAuditWithMissions(input: {
   maxSteps: number;
   maxCostUsd: number;
   mode?: "preview" | "standard";
+  workspaceId?: string;
 }) {
   return prisma.$transaction(async (tx) => {
+    const project = input.workspaceId
+      ? await getOrCreateWorkspaceProject({ workspaceId: input.workspaceId, targetUrl: input.targetUrl })
+      : await getOrCreateDevelopmentProject(input.targetUrl);
     const audit = await tx.audit.create({
       data: {
-        projectId: (await getOrCreateDevelopmentProject(input.targetUrl)).id,
+        projectId: project.id,
         targetUrl: input.targetUrl,
         correlationId: input.correlationId,
         maxSteps: input.maxSteps,
@@ -935,7 +961,7 @@ export async function finalizeAuditIfReady(auditId: string) {
   return { finalized: true, status: "completed" as const };
 }
 
-export async function getAuditSummary(auditId: string) {
+export async function getAuditSummary(auditId: string, options: { workspaceId?: string } = {}) {
   const audit = await prisma.audit.findUnique({
     where: { id: auditId },
     include: {
@@ -957,6 +983,9 @@ export async function getAuditSummary(auditId: string) {
 
   if (!audit) {
     throw new DomainError("AUDIT_NOT_FOUND", `Audit not found: ${auditId}`, "Audit was not found.");
+  }
+  if (options.workspaceId && audit.project.organizationId !== options.workspaceId) {
+    throw new DomainError("AUDIT_ACCESS_DENIED", "Audit is outside the current workspace.", "Audit is not available.");
   }
 
   const missions = audit.missions.map((mission) => ({
@@ -1126,7 +1155,16 @@ export async function getAuditSummary(auditId: string) {
   };
 }
 
-export async function getAuditFindings(auditId: string) {
+export async function getAuditFindings(auditId: string, options: { workspaceId?: string } = {}) {
+  if (options.workspaceId) {
+    const audit = await prisma.audit.findFirst({
+      where: { id: auditId, project: { organizationId: options.workspaceId } },
+      select: { id: true }
+    });
+    if (!audit) {
+      throw new DomainError("AUDIT_ACCESS_DENIED", "Audit is outside the current workspace.", "Audit is not available.");
+    }
+  }
   const findings = await prisma.finding.findMany({
     where: { auditId },
     orderBy: [{ severity: "asc" }, { createdAt: "asc" }],
@@ -1154,6 +1192,13 @@ export async function getAuditFindings(auditId: string) {
       type: evidence.type,
       content: evidence.content,
       localPath: evidence.localPath,
+      storageProvider: evidence.storageProvider,
+      storageBucket: evidence.storageBucket,
+      storagePath: evidence.storagePath,
+      storageContentType: evidence.storageContentType,
+      storageSizeBytes: evidence.storageSizeBytes,
+      publicEvidenceId: evidence.publicEvidenceId,
+      externalSharingEnabled: evidence.externalSharingEnabled,
       metadata: evidence.metadata,
       createdAt: evidence.createdAt.toISOString()
     }))

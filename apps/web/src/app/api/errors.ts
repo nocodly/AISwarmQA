@@ -7,11 +7,15 @@ export function jsonError(code: string, message: string, status = 400) {
 
 export function jsonErrorFromUnknown(error: unknown) {
   if (error instanceof DomainError) {
-    const status = error.code === "AUDIT_NOT_FOUND" ? 404 : 400;
+    const status = error.code.endsWith("_NOT_FOUND") ? 404 : error.code.endsWith("_ACCESS_DENIED") ? 403 : 400;
     return jsonError(error.code, error.safeMessage, status);
   }
 
   if (error instanceof Error) {
+    if (error.name === "AuthError") {
+      return jsonError("AUTH_REQUIRED", error.message, 401);
+    }
+
     if (error.message === "INVALID_URL") {
       return jsonError("INVALID_URL", "The submitted URL is invalid.", 400);
     }
@@ -23,4 +27,3 @@ export function jsonErrorFromUnknown(error: unknown) {
 
   return jsonError("INTERNAL_ERROR", "Something went wrong while handling the audit request.", 500);
 }
-

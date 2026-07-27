@@ -2,12 +2,14 @@ import { readRuntimeConfig } from "@ai-swarm-qa/config";
 import { getRepositoryForExport } from "@ai-swarm-qa/database";
 import { createGitHubProvider, defaultGitHubLabelNames, defaultLabelsForFinding } from "@ai-swarm-qa/github";
 import { jsonErrorFromUnknown } from "../../../../../errors";
+import { requireAuth } from "@/lib/auth";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const actor = await requireAuth(request);
     const { id } = await params;
     const config = readRuntimeConfig();
-    const repository = await getRepositoryForExport(id);
+    const repository = await getRepositoryForExport(id, { workspaceId: actor.workspaceId });
     const provider = createGitHubProvider({
       appConfigured: Boolean(config.githubAppId && config.githubAppPrivateKey),
       mock: config.githubExportMock,

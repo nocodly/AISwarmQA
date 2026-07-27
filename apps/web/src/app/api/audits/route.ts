@@ -5,11 +5,13 @@ import { createAuditRecord, transitionAuditStatus } from "@ai-swarm-qa/database"
 import { createAuditQueue, enqueueAuditPlan } from "@ai-swarm-qa/queue";
 import { assertAuditUrlAllowed, auditRequestSchema } from "@ai-swarm-qa/shared";
 import { jsonError, jsonErrorFromUnknown } from "../errors";
+import { requireAuth } from "@/lib/auth";
 
 export async function POST(request: Request) {
   let queue: ReturnType<typeof createAuditQueue> | undefined;
 
   try {
+    const actor = await requireAuth(request);
     const body = auditRequestSchema.parse(await request.json());
     const config = readRuntimeConfig();
     const targetUrl = assertAuditUrlAllowed(body.url, {
@@ -22,7 +24,8 @@ export async function POST(request: Request) {
       targetUrl,
       correlationId,
       maxSteps: config.auditMaxSteps,
-      maxCostUsd: config.auditMaxCost
+      maxCostUsd: config.auditMaxCost,
+      workspaceId: actor.workspaceId
     });
 
     await transitionAuditStatus(audit.id, "validating");

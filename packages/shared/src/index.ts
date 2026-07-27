@@ -65,7 +65,8 @@ export const githubExportPreviewRequestSchema = githubExportFindingSelectionSche
   labelNames: z.array(z.string().min(1).max(80)).max(20).default([]),
   assignees: z.array(z.string().min(1).max(80)).max(10).default([]),
   milestoneNumber: z.number().int().positive().optional(),
-  createMissingLabels: z.boolean().default(false)
+  createMissingLabels: z.boolean().default(false),
+  includeExternalEvidence: z.boolean().default(false)
 });
 
 export type GitHubExportPreviewRequest = z.infer<typeof githubExportPreviewRequestSchema>;

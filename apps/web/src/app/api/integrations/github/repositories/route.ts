@@ -2,9 +2,11 @@ import { readRuntimeConfig } from "@ai-swarm-qa/config";
 import { listGitHubRepositoriesForDevelopment, syncGitHubRepositories } from "@ai-swarm-qa/database";
 import { createGitHubProvider } from "@ai-swarm-qa/github";
 import { jsonErrorFromUnknown } from "../../../errors";
+import { requireAuth } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const actor = await requireAuth(request);
     const config = readRuntimeConfig();
     const provider = createGitHubProvider({
       appConfigured: Boolean(config.githubAppId && config.githubAppPrivateKey),
@@ -12,7 +14,7 @@ export async function GET() {
       appId: config.githubAppId,
       privateKey: config.githubAppPrivateKey
     });
-    const repositories = await listGitHubRepositoriesForDevelopment({ includeMock: config.githubExportMock });
+    const repositories = await listGitHubRepositoriesForDevelopment({ includeMock: config.githubExportMock, workspaceId: actor.workspaceId });
     if (!config.githubExportMock && provider.listRepositories) {
       for (const connectionId of [...new Set(repositories.map((repository) => repository.githubConnectionId))]) {
         const connection = repositories.find((repository) => repository.githubConnectionId === connectionId)?.githubConnection;
@@ -21,7 +23,7 @@ export async function GET() {
         await syncGitHubRepositories({ connectionId, repositories: fresh });
       }
     }
-    const latest = await listGitHubRepositoriesForDevelopment({ includeMock: config.githubExportMock });
+    const latest = await listGitHubRepositoriesForDevelopment({ includeMock: config.githubExportMock, workspaceId: actor.workspaceId });
     return Response.json({
       repositories: latest.map((repository) => ({
         id: repository.id,

@@ -9,15 +9,17 @@ import {
 import { buildIssueDraft, buildGitHubExportIdempotencyKey, createGitHubProvider, defaultGitHubLabelNames } from "@ai-swarm-qa/github";
 import { githubExportPreviewRequestSchema } from "@ai-swarm-qa/shared";
 import { jsonError, jsonErrorFromUnknown } from "../../../../errors";
+import { requireAuth } from "@/lib/auth";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: auditId } = await params;
+    const actor = await requireAuth(request);
     const body = githubExportPreviewRequestSchema.parse(await request.json());
     const config = readRuntimeConfig();
-    const audit = await getCompletedAuditForExport(auditId);
-    const repositories = await listGitHubRepositoriesForDevelopment({ includeMock: config.githubExportMock });
-    const repository = body.repositoryId ? await getRepositoryForExport(body.repositoryId) : repositories[0];
+    const audit = await getCompletedAuditForExport(auditId, { workspaceId: actor.workspaceId });
+    const repositories = await listGitHubRepositoriesForDevelopment({ includeMock: config.githubExportMock, workspaceId: actor.workspaceId });
+    const repository = body.repositoryId ? await getRepositoryForExport(body.repositoryId, { workspaceId: actor.workspaceId }) : repositories[0];
     if (!repository) {
       return jsonError("GITHUB_NOT_CONNECTED", "Connect GitHub before exporting findings.", 409);
     }
@@ -42,7 +44,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (!milestoneValid) warnings.push("Selected milestone is not available and will be ignored.");
     const missingLabels = [...new Set([...defaultGitHubLabelNames, ...body.labelNames])].filter((label) => labels.length > 0 && !labels.includes(label));
     if (missingLabels.length > 0 && !body.createMissingLabels) warnings.push(`Missing labels will be omitted unless approved: ${missingLabels.join(", ")}`);
-    const evidenceBaseUrl = `${config.appUrl.replace(/\/$/, "")}/api/audits/${audit.id}/evidence`;
+    const evidenceBaseUrl = body.includeExternalEvidence ? `${config.appUrl.replace(/\/$/, "")}/evidence` : undefined;
     const idempotencyKeys = selected.map((finding) =>
       buildGitHubExportIdempotencyKey({
         workspaceId: audit.project.organizationId,
@@ -67,7 +69,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         toolVersion: "0.1.0",
         labelNames: body.createMissingLabels ? body.labelNames : body.labelNames.filter((label) => labels.length === 0 || labels.includes(label)),
         assignees: body.assignees.filter((assignee) => assignees.includes(assignee)),
-        evidenceBaseUrl,
+        ...(evidenceBaseUrl ? { evidenceBaseUrl } : {}),
         ...(typeof body.milestoneNumber === "number" && milestoneValid ? { milestoneNumber: body.milestoneNumber } : {})
       });
       const existingExport = existingByFinding.get(finding.id);
@@ -78,7 +80,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         labels: draft.labels,
         assignees: draft.assignees,
         milestone: draft.milestone ?? null,
-        evidenceAvailable: issueFinding.evidence.length > 0,
+        evidenceAvailable: finding.evidence.some((evidence) => Boolean(evidence.storagePath && !evidence.revokedAt)),
         alreadyExported: existingExport?.status === "CREATED",
         existingIssueUrl: existingExport?.githubIssueUrl ?? null
       };
@@ -99,6 +101,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       missingLabels,
       estimatedApiRequests: issuesToCreate + 3,
       createMissingLabels: body.createMissingLabels,
+      includeExternalEvidence: body.includeExternalEvidence,
       issues: preview
     });
   } catch (error) {

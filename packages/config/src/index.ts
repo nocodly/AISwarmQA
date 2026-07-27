@@ -46,6 +46,13 @@ export const runtimeConfigSchema = z.object({
   interactionTestingEnabled: z.boolean(),
   storageLocalPath: z.string().min(1)
 ,
+  supabaseUrl: z.string().url().optional(),
+  supabasePublishableKey: z.string().optional(),
+  supabaseSecretKey: z.string().optional(),
+  supabaseServiceRoleKey: z.string().optional(),
+  supabaseStorageBucket: z.string().min(1),
+  authAllowDevActor: z.boolean(),
+  evidenceMaxBytes: z.number().int().min(1024).max(20 * 1024 * 1024),
   autonomousBrowserMode: z.enum(["disabled", "mock", "enabled"]),
   autonomousMockScenario: z
     .enum([
@@ -182,6 +189,9 @@ function findUpwards(fileName: string, startDir = process.cwd()): string {
 }
 
 export function loadRuntimeEnv(env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  if (env !== process.env) {
+    return { ...env };
+  }
   const envFile = parseEnvFile(findUpwards(".env"));
   const envLocalFile = parseEnvFile(findUpwards(".env.local"));
   return {
@@ -198,6 +208,15 @@ function normalizeAnthropicModel(model: string | undefined): string | undefined 
     "claude-sonnet-4-20250514": "claude-sonnet-4-6"
   };
   return retiredAliases[model] ?? model;
+}
+
+function optionalUrl(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  try {
+    return new URL(value).toString();
+  } catch {
+    return undefined;
+  }
 }
 
 export function readRuntimeConfig(env: NodeJS.ProcessEnv = process.env): RuntimeConfig {
@@ -251,6 +270,13 @@ export function readRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
     accessibilityScanEnabled: (loadedEnv.ACCESSIBILITY_SCAN_ENABLED ?? "true") === "true",
     interactionTestingEnabled: (loadedEnv.INTERACTION_TESTING_ENABLED ?? "true") === "true",
     storageLocalPath: loadedEnv.STORAGE_LOCAL_PATH ?? "./storage/dev",
+    supabaseUrl: optionalUrl(loadedEnv.NEXT_PUBLIC_SUPABASE_URL) ?? optionalUrl(loadedEnv.SUPABASE_URL),
+    supabasePublishableKey: loadedEnv.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || loadedEnv.SUPABASE_PUBLISHABLE_KEY || undefined,
+    supabaseSecretKey: loadedEnv.SUPABASE_SECRET_KEY || undefined,
+    supabaseServiceRoleKey: loadedEnv.SUPABASE_SERVICE_ROLE_KEY || loadedEnv.SUPABASE_SECRET_KEY || undefined,
+    supabaseStorageBucket: loadedEnv.SUPABASE_STORAGE_BUCKET || "aiswarmqa-evidence",
+    authAllowDevActor: (loadedEnv.AUTH_ALLOW_DEV_ACTOR ?? (loadedEnv.NODE_ENV === "production" ? "false" : "true")) === "true",
+    evidenceMaxBytes: Number(loadedEnv.EVIDENCE_MAX_BYTES ?? 5 * 1024 * 1024),
     autonomousBrowserMode: loadedEnv.AUTONOMOUS_BROWSER_MODE ?? "disabled",
     autonomousMockScenario: loadedEnv.AUTONOMOUS_MOCK_SCENARIO as RuntimeConfig["autonomousMockScenario"],
     autonomousMaxSteps: Number(loadedEnv.AUTONOMOUS_MAX_STEPS ?? 12),

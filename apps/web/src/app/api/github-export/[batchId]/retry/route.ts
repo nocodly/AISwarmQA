@@ -3,14 +3,16 @@ import { resetFailedGitHubExportsForRetry } from "@ai-swarm-qa/database";
 import { createGitHubExportQueue, enqueueGitHubExport } from "@ai-swarm-qa/queue";
 import { githubExportRetryRequestSchema } from "@ai-swarm-qa/shared";
 import { jsonError, jsonErrorFromUnknown } from "../../../errors";
+import { requireAuth } from "@/lib/auth";
 
 export async function POST(request: Request, { params }: { params: Promise<{ batchId: string }> }) {
   let queue: ReturnType<typeof createGitHubExportQueue> | undefined;
   try {
+    const actor = await requireAuth(request);
     githubExportRetryRequestSchema.parse(await request.json());
     const { batchId } = await params;
     const config = readRuntimeConfig();
-    const batch = await resetFailedGitHubExportsForRetry(batchId);
+    const batch = await resetFailedGitHubExportsForRetry(batchId, { workspaceId: actor.workspaceId });
     queue = createGitHubExportQueue(config.redisUrl);
     await enqueueGitHubExport(queue, {
       batchId: batch.id,

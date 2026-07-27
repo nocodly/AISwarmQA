@@ -205,6 +205,7 @@ type GitHubExportPreview = {
   warnings: string[];
   missingLabels: string[];
   estimatedApiRequests: number;
+  includeExternalEvidence: boolean;
   issues: Array<{
     findingId: string;
     title: string;
@@ -259,6 +260,7 @@ export function AuditDetails({ auditId }: { auditId: string }) {
   const [githubPreview, setGitHubPreview] = useState<GitHubExportPreview | null>(null);
   const [githubBatch, setGitHubBatch] = useState<GitHubExportBatch | null>(null);
   const [githubMessage, setGitHubMessage] = useState<string | null>(null);
+  const [includeExternalEvidence, setIncludeExternalEvidence] = useState(false);
 
   const audit = data?.audit ?? null;
   const isTerminal = useMemo(() => (audit ? terminalStatuses.has(audit.status) : false), [audit]);
@@ -410,6 +412,7 @@ export function AuditDetails({ auditId }: { auditId: string }) {
         findingIds: selectedFindingIds,
         repositoryId: selectedRepositoryId || undefined,
         excludeInformational,
+        includeExternalEvidence,
         confirmed: false
       })
     });
@@ -432,6 +435,7 @@ export function AuditDetails({ auditId }: { auditId: string }) {
         findingIds: selectedFindingIds,
         repositoryId: githubPreview.repository.id,
         excludeInformational,
+        includeExternalEvidence,
         confirmed: true
       })
     });
@@ -880,6 +884,17 @@ export function AuditDetails({ auditId }: { auditId: string }) {
                   onChange={(event) => setExcludeInformational(event.target.checked)}
                 />{" "}
                 Exclude informational findings
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={includeExternalEvidence}
+                  onChange={(event) => {
+                    setIncludeExternalEvidence(event.target.checked);
+                    setGitHubPreview(null);
+                  }}
+                />{" "}
+                Include externally viewable evidence links
               </label>
               {githubStatus?.repositories.length ? (
                 <select value={selectedRepositoryId} onChange={(event) => setSelectedRepositoryId(event.target.value)}>

@@ -85,6 +85,7 @@ enum GitHubExportBatchStatus {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
+  supabaseUserId String? @unique
   name      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -397,6 +398,11 @@ model FindingEvidence {
   type      String
   content   String?
   localPath String?
+  storageProvider String?
+  storageBucket String?
+  storagePath String?
+  storageContentType String?
+  storageSizeBytes Int?
   publicEvidenceId String? @unique
   externalSharingEnabled Boolean @default(false)
   revokedAt DateTime?
@@ -406,6 +412,7 @@ model FindingEvidence {
   finding Finding @relation(fields: [findingId], references: [id], onDelete: Cascade)
 
   @@index([publicEvidenceId])
+  @@index([storageBucket, storagePath])
 }
 
 model Report {

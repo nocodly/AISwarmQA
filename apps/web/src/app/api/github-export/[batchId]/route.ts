@@ -1,10 +1,12 @@
 import { getGitHubExportBatch, toIssueFinding } from "@ai-swarm-qa/database";
 import { jsonErrorFromUnknown } from "../../errors";
+import { requireAuth } from "@/lib/auth";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ batchId: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ batchId: string }> }) {
   try {
+    const actor = await requireAuth(request);
     const { batchId } = await params;
-    const batch = await getGitHubExportBatch(batchId);
+    const batch = await getGitHubExportBatch(batchId, { workspaceId: actor.workspaceId });
     return Response.json({
       batch: {
         id: batch.id,

@@ -1,12 +1,14 @@
 import { readRuntimeConfig } from "@ai-swarm-qa/config";
 import { getGitHubConnectionStatus } from "@ai-swarm-qa/database";
 import { jsonErrorFromUnknown } from "../../../errors";
+import { requireAuth } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const actor = await requireAuth(request);
     const config = readRuntimeConfig();
     const appConfigured = Boolean(config.githubAppId && config.githubAppClientId && config.githubAppPrivateKey);
-    const status = await getGitHubConnectionStatus({ includeMock: config.githubExportMock });
+    const status = await getGitHubConnectionStatus({ includeMock: config.githubExportMock, workspaceId: actor.workspaceId });
     return Response.json({
       appConfigured,
       mockMode: config.githubExportMock,
