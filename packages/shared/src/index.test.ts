@@ -37,6 +37,7 @@ import {
 describe("shared contracts", () => {
   it("parses audit creation input", () => {
     expect(auditRequestSchema.parse({ url: "http://localhost:4100" })).toEqual({
+      auditMode: "standard",
       url: "http://localhost:4100"
     });
   });

@@ -6,9 +6,9 @@ export default function NewAuditPage() {
     <AppShell>
       <header className="page-header">
         <div>
-          <div className="eyebrow">New Audit</div>
-          <h1>Create an audit request</h1>
-          <p>Authorization is required before the system queues browser workers.</p>
+          <div className="eyebrow">Start Audit</div>
+          <h1>Brief your QA swarm.</h1>
+          <p>Choose the target, access mode, scope, and safety rules before agents inspect the product.</p>
         </div>
       </header>
       <AuditForm />

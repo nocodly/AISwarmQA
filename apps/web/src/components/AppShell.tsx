@@ -6,12 +6,12 @@ import { BrandIcon } from "./BrandIcons";
 const appNav = [
   { href: "/", label: "Home", icon: "browser", tone: "cyan" },
   { href: "/dashboard", label: "Dashboard", icon: "agent", tone: "lime" },
-  { href: "/billing", label: "Billing", icon: "complete", tone: "magenta" },
-  { href: "/projects", label: "Projects", icon: "browser", tone: "purple" },
-  { href: "/projects/new", label: "New Audit", icon: "bug", tone: "orange" },
+  { href: "/projects/new", label: "Start Audit", icon: "bug", tone: "orange" },
+  { href: "/projects", label: "Audit Hub", icon: "browser", tone: "purple" },
+  { href: "/settings", label: "Workspace", icon: "private", tone: "lime" },
+  { href: "/billing", label: "Plan & Usage", icon: "complete", tone: "magenta" },
   { href: "/onboarding", label: "Onboarding", icon: "interaction", tone: "cyan" },
-  { href: "/settings", label: "Settings", icon: "private", tone: "lime" },
-  { href: "/audits/demo", label: "Audit Report", icon: "evidence", tone: "magenta" }
+  { href: "/docs", label: "Docs", icon: "evidence", tone: "cyan" }
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {

@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       auditId: audit.id,
       targetUrl,
       correlationId,
-      auditMode: "standard"
+      auditMode: body.auditMode
     });
 
     console.log(JSON.stringify({ level: "info", event: "audit_planning_enqueued", auditId: audit.id }));

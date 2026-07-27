@@ -525,6 +525,22 @@ export function AuditDetails({ auditId }: { auditId: string }) {
 
   return (
     <>
+      <section className="audit-progress-hero">
+        <div>
+          <p className="eyebrow">Live audit progress</p>
+          <h2>{audit.status === "completed" ? "Report ready." : "Agents are checking the product."}</h2>
+          <p>
+            AISwarmQA verifies routes, button intent, forms, auth gates, evidence, and GitHub-ready reproduction steps for {audit.targetUrl}.
+          </p>
+        </div>
+        <div className="progress-rail" aria-label="Audit pipeline">
+          {["validating", "planning", "running", "analyzing", "completed"].map((status) => (
+            <span className={audit.status === status || (status === "completed" && audit.status === "generating_report") ? "active" : ""} key={status}>
+              {status}
+            </span>
+          ))}
+        </div>
+      </section>
       <section className="grid">
         <article className="card">
           <div className="metric">{audit.findingCount}</div>

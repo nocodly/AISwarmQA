@@ -50,7 +50,19 @@ export const findingSchema = z.object({
 export type Finding = z.infer<typeof findingSchema>;
 
 export const auditRequestSchema = z.object({
-  url: z.string().min(1)
+  url: z.string().min(1),
+  auditMode: z.enum(["preview", "standard"]).default("standard"),
+  metadata: z
+    .object({
+      projectName: z.string().max(120).optional(),
+      environment: z.enum(["production", "staging", "preview"]).optional(),
+      accessMode: z.enum(["public", "temporary-account", "guided-instructions", "credentials-later"]).optional(),
+      auditScope: z.string().max(80).optional(),
+      customInstructions: z.string().max(1600).optional(),
+      safetyRules: z.array(z.string().max(120)).max(12).optional()
+    })
+    .strict()
+    .optional()
 });
 
 export type AuditRequest = z.infer<typeof auditRequestSchema>;
