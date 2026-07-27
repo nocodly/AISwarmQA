@@ -7,6 +7,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type AuthConfig = {
   configured: boolean;
+  instantSignupConfigured: boolean;
   supabaseUrl: string | null;
   supabasePublishableKey: string | null;
 };
@@ -17,6 +18,7 @@ export function AuthClient() {
   const [mode, setMode] = useState<"signup" | "signin">("signup");
   const [client, setClient] = useState<SupabaseClient | null>(null);
   const [configured, setConfigured] = useState(true);
+  const [instantSignupConfigured, setInstantSignupConfigured] = useState(true);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -36,6 +38,7 @@ export function AuthClient() {
         setConfigured(false);
         return;
       }
+      setInstantSignupConfigured(config.instantSignupConfigured);
 
       const supabase = createClient(config.supabaseUrl, config.supabasePublishableKey, {
         auth: {
@@ -78,19 +81,21 @@ export function AuthClient() {
     setError(null);
     setMessage(null);
 
-    const result =
-      mode === "signup"
-        ? await client.auth.signUp({
-            email,
-            password,
-            options: {
-              data: {
-                name: name.trim() || undefined,
-                full_name: name.trim() || undefined
-              }
-            }
-          })
-        : await client.auth.signInWithPassword({ email, password });
+    if (mode === "signup") {
+      const signupResponse = await fetch("/api/auth/signup", {
+        body: JSON.stringify({ email, name, password }),
+        headers: { "content-type": "application/json" },
+        method: "POST"
+      });
+      const signupBody = (await signupResponse.json().catch(() => null)) as { error?: { message?: string } } | null;
+      if (!signupResponse.ok) {
+        setError(signupBody?.error?.message ?? "Account could not be created.");
+        setLoading(false);
+        return;
+      }
+    }
+
+    const result = await client.auth.signInWithPassword({ email, password });
 
     if (result.error) {
       setError(result.error.message);
@@ -104,7 +109,7 @@ export function AuthClient() {
       return;
     }
 
-    setMessage("Check your email to confirm the account, then sign in.");
+    setMessage("Account created. Opening your dashboard.");
     setLoading(false);
   }
 
@@ -158,6 +163,12 @@ export function AuthClient() {
                 Supabase Auth is not configured for this deployment.
               </div>
             ) : null}
+            {configured && mode === "signup" && !instantSignupConfigured ? (
+              <div className="auth-alert error">
+                <AlertCircle aria-hidden="true" size={18} />
+                Instant signup is not configured for this deployment.
+              </div>
+            ) : null}
 
             <form className="auth-form" onSubmit={handleSubmit}>
               {mode === "signup" ? (
@@ -197,7 +208,7 @@ export function AuthClient() {
                 </div>
               ) : null}
 
-              <button className="cta-button" disabled={!configured || loading || !client} type="submit">
+              <button className="cta-button" disabled={!configured || loading || !client || (mode === "signup" && !instantSignupConfigured)} type="submit">
                 {loading ? "Working..." : mode === "signup" ? "Create account" : "Sign in"}
               </button>
             </form>
