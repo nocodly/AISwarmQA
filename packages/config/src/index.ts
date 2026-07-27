@@ -109,7 +109,23 @@ export const runtimeConfigSchema = z.object({
   githubAppWebhookSecret: z.string().optional(),
   githubOAuthRedirectUri: z.string().url().optional(),
   githubAppSetupUrl: z.string().url().optional(),
-  githubExportMock: z.boolean()
+  githubExportMock: z.boolean(),
+  stripeSecretKey: z.string().optional(),
+  stripeWebhookSecret: z.string().optional(),
+  stripeProMonthlyPriceId: z.string().optional(),
+  stripeProYearlyPriceId: z.string().optional(),
+  stripeTrialDays: z.number().int().min(0).max(90),
+  resendApiKey: z.string().optional(),
+  emailFrom: z.string().optional(),
+  sentryDsn: z.string().url().optional(),
+  rateLimitEnabled: z.boolean(),
+  rateLimitWindowMs: z.number().int().min(1000).max(24 * 60 * 60 * 1000),
+  rateLimitAuditCreateMax: z.number().int().min(1).max(1000),
+  rateLimitGitHubExportMax: z.number().int().min(1).max(1000),
+  rateLimitEvidenceMax: z.number().int().min(1).max(10000),
+  rateLimitInvitationMax: z.number().int().min(1).max(1000),
+  rateLimitStripeCheckoutMax: z.number().int().min(1).max(1000),
+  planOverridesJson: z.string().optional()
 }).superRefine((config, context) => {
   if (config.autonomousMaxProviderCalls > config.autonomousMaxSteps) {
     context.addIssue({
@@ -153,9 +169,118 @@ export const runtimeConfigSchema = z.object({
       message: "ANTHROPIC_API_KEY is required when AI_PROVIDER=anthropic."
     });
   }
+  if ((config.stripeProMonthlyPriceId || config.stripeProYearlyPriceId) && !config.stripeSecretKey) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["stripeSecretKey"],
+      message: "STRIPE_SECRET_KEY is required when Stripe price IDs are configured."
+    });
+  }
 });
 
 export type RuntimeConfig = z.infer<typeof runtimeConfigSchema>;
+
+export type CommercialPlanId = "free" | "pro" | "business";
+export type BillingInterval = "monthly" | "yearly" | "contact";
+
+export type CommercialPlan = {
+  id: CommercialPlanId;
+  name: string;
+  workspaceLimit: number | null;
+  auditsPerMonth: number | null;
+  maxPagesPerAudit: number | null;
+  concurrentAudits: number | null;
+  githubExportEnabled: boolean;
+  evidenceRetentionDays: number;
+  basicMissionsOnly: boolean;
+  priorityQueue: boolean;
+  emailReports: boolean;
+  teamInvitationsEnabled: boolean;
+  teamMemberLimit: number | null;
+  apiAccess: boolean;
+};
+
+export const defaultCommercialPlans: Record<CommercialPlanId, CommercialPlan> = {
+  free: {
+    id: "free",
+    name: "Free",
+    workspaceLimit: 1,
+    auditsPerMonth: 2,
+    maxPagesPerAudit: 25,
+    concurrentAudits: 1,
+    githubExportEnabled: true,
+    evidenceRetentionDays: 7,
+    basicMissionsOnly: true,
+    priorityQueue: false,
+    emailReports: false,
+    teamInvitationsEnabled: false,
+    teamMemberLimit: 1,
+    apiAccess: false
+  },
+  pro: {
+    id: "pro",
+    name: "Pro",
+    workspaceLimit: 5,
+    auditsPerMonth: 50,
+    maxPagesPerAudit: 500,
+    concurrentAudits: 3,
+    githubExportEnabled: true,
+    evidenceRetentionDays: 90,
+    basicMissionsOnly: false,
+    priorityQueue: true,
+    emailReports: true,
+    teamInvitationsEnabled: true,
+    teamMemberLimit: 10,
+    apiAccess: false
+  },
+  business: {
+    id: "business",
+    name: "Business",
+    workspaceLimit: null,
+    auditsPerMonth: null,
+    maxPagesPerAudit: null,
+    concurrentAudits: null,
+    githubExportEnabled: true,
+    evidenceRetentionDays: 365,
+    basicMissionsOnly: false,
+    priorityQueue: true,
+    emailReports: true,
+    teamInvitationsEnabled: true,
+    teamMemberLimit: null,
+    apiAccess: true
+  }
+};
+
+const commercialPlanOverrideSchema = z
+  .object({
+    workspaceLimit: z.number().int().positive().nullable().optional(),
+    auditsPerMonth: z.number().int().positive().nullable().optional(),
+    maxPagesPerAudit: z.number().int().positive().nullable().optional(),
+    concurrentAudits: z.number().int().positive().nullable().optional(),
+    evidenceRetentionDays: z.number().int().positive().optional(),
+    teamMemberLimit: z.number().int().positive().nullable().optional()
+  })
+  .partial();
+
+const commercialPlansSchema = z.partialRecord(
+  z.enum(["free", "pro", "business"]),
+  commercialPlanOverrideSchema
+);
+
+export function readCommercialPlans(env: NodeJS.ProcessEnv = process.env): Record<CommercialPlanId, CommercialPlan> {
+  const config = readRuntimeConfig(env);
+  const plans = structuredClone(defaultCommercialPlans) as Record<CommercialPlanId, CommercialPlan>;
+  if (!config.planOverridesJson) return plans;
+  const parsed = commercialPlansSchema.parse(JSON.parse(config.planOverridesJson));
+  for (const [planId, overrides] of Object.entries(parsed) as Array<[CommercialPlanId, Partial<CommercialPlan>]>) {
+    plans[planId] = { ...plans[planId], ...overrides };
+  }
+  return plans;
+}
+
+export function getCommercialPlan(planId: CommercialPlanId, env: NodeJS.ProcessEnv = process.env): CommercialPlan {
+  return readCommercialPlans(env)[planId];
+}
 
 function parseEnvFile(path: string): Record<string, string> {
   if (!existsSync(path)) return {};
@@ -318,7 +443,23 @@ export function readRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
     githubAppWebhookSecret: loadedEnv.GITHUB_APP_WEBHOOK_SECRET || undefined,
     githubOAuthRedirectUri: loadedEnv.GITHUB_APP_CALLBACK_URL || loadedEnv.GITHUB_OAUTH_REDIRECT_URI || undefined,
     githubAppSetupUrl: loadedEnv.GITHUB_APP_SETUP_URL || undefined,
-    githubExportMock: (loadedEnv.GITHUB_EXPORT_MOCK ?? "false") === "true"
+    githubExportMock: (loadedEnv.GITHUB_EXPORT_MOCK ?? "false") === "true",
+    stripeSecretKey: loadedEnv.STRIPE_SECRET_KEY || undefined,
+    stripeWebhookSecret: loadedEnv.STRIPE_WEBHOOK_SECRET || undefined,
+    stripeProMonthlyPriceId: loadedEnv.STRIPE_PRO_MONTHLY_PRICE_ID || undefined,
+    stripeProYearlyPriceId: loadedEnv.STRIPE_PRO_YEARLY_PRICE_ID || undefined,
+    stripeTrialDays: Number(loadedEnv.STRIPE_TRIAL_DAYS ?? 0),
+    resendApiKey: loadedEnv.RESEND_API_KEY || undefined,
+    emailFrom: loadedEnv.EMAIL_FROM || undefined,
+    sentryDsn: optionalUrl(loadedEnv.SENTRY_DSN),
+    rateLimitEnabled: (loadedEnv.RATE_LIMIT_ENABLED ?? "true") === "true",
+    rateLimitWindowMs: Number(loadedEnv.RATE_LIMIT_WINDOW_MS ?? 60_000),
+    rateLimitAuditCreateMax: Number(loadedEnv.RATE_LIMIT_AUDIT_CREATE_MAX ?? 10),
+    rateLimitGitHubExportMax: Number(loadedEnv.RATE_LIMIT_GITHUB_EXPORT_MAX ?? 20),
+    rateLimitEvidenceMax: Number(loadedEnv.RATE_LIMIT_EVIDENCE_MAX ?? 120),
+    rateLimitInvitationMax: Number(loadedEnv.RATE_LIMIT_INVITATION_MAX ?? 20),
+    rateLimitStripeCheckoutMax: Number(loadedEnv.RATE_LIMIT_STRIPE_CHECKOUT_MAX ?? 10),
+    planOverridesJson: loadedEnv.PLAN_OVERRIDES_JSON || undefined
   });
 
   return parsed;

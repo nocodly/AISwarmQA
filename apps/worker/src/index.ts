@@ -17,11 +17,13 @@ import {
   completeBrowserSessionWithDuration,
   createBrowserSession,
   finalizeAuditIfReady,
+  getAuditWorkspaceId,
   finalizeGitHubExportBatch,
   getAuditSummary,
   getGitHubExportBatch,
   listUnstoredLocalEvidenceForAudit,
   markEvidenceStored,
+  markEvidenceRetentionForAudit,
   markFindingGitHubExportCreated,
   markFindingGitHubExportCreating,
   markFindingGitHubExportFailed,
@@ -33,6 +35,7 @@ import {
   markMissionRunning,
   persistFindings,
   persistMissionPlan,
+  recordUsageEvent,
   transitionAuditStatus,
   toIssueFinding,
   upsertAuditPlan,
@@ -938,6 +941,17 @@ async function runMissionJob(job: Job<ExecuteMissionJob>) {
       findings: result.findings.length,
       finalized: finalization.finalized
     });
+    if (finalization.finalized && (finalization.status === "completed" || finalization.status === "failed" || finalization.status === "cancelled")) {
+      const workspaceId = await getAuditWorkspaceId(payload.auditId).catch(() => null);
+      if (workspaceId) {
+        await recordUsageEvent({
+          workspaceId,
+          auditId: payload.auditId,
+          type: finalization.status === "completed" ? "AUDIT_COMPLETED" : finalization.status === "failed" ? "AUDIT_FAILED" : "AUDIT_CANCELLED",
+          idempotencyKey: `audit-terminal:${payload.auditId}:${finalization.status}`
+        }).catch((error) => logError("usage.audit_terminal_failed", { auditId: payload.auditId, error: safeFailureMessage(error) }));
+      }
+    }
     return { auditId: payload.auditId, missionId: payload.missionId, status: "completed", findings: result.findings.length };
   } catch (error) {
     const failureReason = safeFailureMessage(error);
@@ -1011,6 +1025,12 @@ async function uploadAuditEvidence(auditId: string) {
         error: safeFailureMessage(error)
       });
     }
+  }
+  const workspaceId = evidence[0]?.finding.audit.project.organizationId;
+  if (workspaceId) {
+    await markEvidenceRetentionForAudit({ auditId, workspaceId }).catch((error) => {
+      logError("evidence.retention.mark_failed", { auditId, error: safeFailureMessage(error) });
+    });
   }
 }
 
@@ -1088,6 +1108,13 @@ async function runGitHubExportJob(job: Job<unknown>) {
         ...draft
       });
       await markFindingGitHubExportCreated({ exportId: item.id, issueNumber: issue.number, issueUrl: issue.url });
+      await recordUsageEvent({
+        workspaceId: batch.githubConnection.workspaceId,
+        userId: batch.createdByUserId,
+        auditId: batch.auditId,
+        type: "GITHUB_ISSUE_EXPORTED",
+        idempotencyKey: `github-issue-created:${item.id}`
+      }).catch((error) => logError("usage.github_issue_failed", { batchId: batch.id, exportId: item.id, error: safeFailureMessage(error) }));
       log("github.issue.created", {
         batchId: batch.id,
         auditId: batch.auditId,

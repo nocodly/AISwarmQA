@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
-import { DomainError } from "@ai-swarm-qa/database";
+import { DomainError, PlanLimitError } from "@ai-swarm-qa/database";
 
 export function jsonError(code: string, message: string, status = 400) {
   return NextResponse.json({ error: { code, message } }, { status });
 }
 
 export function jsonErrorFromUnknown(error: unknown) {
+  if (error instanceof PlanLimitError) {
+    return NextResponse.json(
+      { error: { code: error.code, message: error.safeMessage, ...error.metadata } },
+      { status: error.code === "SUBSCRIPTION_INACTIVE" ? 402 : 429 }
+    );
+  }
   if (error instanceof DomainError) {
     const status = error.code.endsWith("_NOT_FOUND") ? 404 : error.code.endsWith("_ACCESS_DENIED") ? 403 : 400;
     return jsonError(error.code, error.safeMessage, status);

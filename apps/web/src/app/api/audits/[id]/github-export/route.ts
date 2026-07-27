@@ -1,18 +1,27 @@
 import { readRuntimeConfig } from "@ai-swarm-qa/config";
-import { createGitHubExportBatch, enableExternalEvidenceForFindings, getCompletedAuditForExport, getRepositoryForExport } from "@ai-swarm-qa/database";
+import {
+  assertCanUseGitHubExport,
+  createGitHubExportBatch,
+  enableExternalEvidenceForFindings,
+  getCompletedAuditForExport,
+  getRepositoryForExport
+} from "@ai-swarm-qa/database";
 import { buildGitHubExportIdempotencyKey } from "@ai-swarm-qa/github";
 import { createGitHubExportQueue, enqueueGitHubExport } from "@ai-swarm-qa/queue";
 import { githubExportRequestSchema } from "@ai-swarm-qa/shared";
 import { jsonError, jsonErrorFromUnknown } from "../../../errors";
 import { requireAuth } from "@/lib/auth";
+import { assertRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   let queue: ReturnType<typeof createGitHubExportQueue> | undefined;
   try {
     const { id: auditId } = await params;
     const actor = await requireAuth(request);
-    const body = githubExportRequestSchema.parse(await request.json());
     const config = readRuntimeConfig();
+    assertRateLimit(request, "github-export", config.rateLimitGitHubExportMax);
+    await assertCanUseGitHubExport({ workspaceId: actor.workspaceId, userId: actor.userId });
+    const body = githubExportRequestSchema.parse(await request.json());
     const audit = await getCompletedAuditForExport(auditId, { workspaceId: actor.workspaceId });
     const repository = await getRepositoryForExport(body.repositoryId, { workspaceId: actor.workspaceId });
     const idempotencyKeys = new Map(
@@ -59,6 +68,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       { status: 202 }
     );
   } catch (error) {
+    const rate = rateLimitResponse(error);
+    if (rate) return rate;
     if (error instanceof SyntaxError) {
       return jsonError("INVALID_JSON", "The request body must be valid JSON.", 400);
     }

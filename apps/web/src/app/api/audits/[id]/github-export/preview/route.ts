@@ -2,6 +2,7 @@ import { readRuntimeConfig } from "@ai-swarm-qa/config";
 import {
   getCompletedAuditForExport,
   getRepositoryForExport,
+  assertCanUseGitHubExport,
   listExistingGitHubExportsByIdempotencyKeys,
   listGitHubRepositoriesForDevelopment,
   toIssueFinding
@@ -15,6 +16,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const { id: auditId } = await params;
     const actor = await requireAuth(request);
+    await assertCanUseGitHubExport({ workspaceId: actor.workspaceId, userId: actor.userId });
     const body = githubExportPreviewRequestSchema.parse(await request.json());
     const config = readRuntimeConfig();
     const audit = await getCompletedAuditForExport(auditId, { workspaceId: actor.workspaceId });

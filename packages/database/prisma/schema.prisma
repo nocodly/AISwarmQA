@@ -82,6 +82,57 @@ enum GitHubExportBatchStatus {
   CANCELLED
 }
 
+enum CommercialPlan {
+  FREE
+  PRO
+  BUSINESS
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+  CONTACT
+}
+
+enum SubscriptionStatus {
+  FREE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  UNPAID
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+}
+
+enum UsageEventType {
+  AUDIT_CREATED
+  AUDIT_COMPLETED
+  AUDIT_FAILED
+  AUDIT_CANCELLED
+  PAGE_SCANNED
+  AI_REQUEST
+  SCREENSHOT_CREATED
+  STORAGE_BYTES
+  GITHUB_ISSUE_EXPORTED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
+enum WorkspaceDeletionStatus {
+  REQUESTED
+  BLOCKED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -95,6 +146,10 @@ model User {
   githubExportBatches GitHubExportBatch[]
   githubExports FindingGitHubExport[]
   githubAuthStates GitHubAuthState[]
+  sentEmails EmailEvent[]
+  workspaceInvitationsSent WorkspaceInvitation[] @relation("WorkspaceInvitationInviter")
+  workspaceDeletionRequests WorkspaceDeletionRequest[]
+  usageEvents WorkspaceUsageEvent[]
 }
 
 model Organization {
@@ -108,6 +163,13 @@ model Organization {
   projects          Project[]
   githubConnections GitHubConnection[]
   githubAuthStates  GitHubAuthState[]
+  billingCustomer   BillingCustomer?
+  subscription      WorkspaceSubscription?
+  usageEvents       WorkspaceUsageEvent[]
+  invitations       WorkspaceInvitation[]
+  onboarding        WorkspaceOnboarding?
+  auditLogs         WorkspaceAuditLog[]
+  deletionRequests  WorkspaceDeletionRequest[]
 }
 
 model OrganizationMember {
@@ -164,6 +226,7 @@ model Audit {
   browserSwarmRuns BrowserSwarmRun[]
   githubExportBatches GitHubExportBatch[]
   githubExports FindingGitHubExport[]
+  usageEvents WorkspaceUsageEvent[]
 }
 
 model AuditPlan {
@@ -406,6 +469,10 @@ model FindingEvidence {
   publicEvidenceId String? @unique
   externalSharingEnabled Boolean @default(false)
   revokedAt DateTime?
+  expiresAt DateTime?
+  deletionQueuedAt DateTime?
+  deletedAt DateTime?
+  deletionError String?
   metadata  Json
   createdAt DateTime @default(now())
 
@@ -413,6 +480,176 @@ model FindingEvidence {
 
   @@index([publicEvidenceId])
   @@index([storageBucket, storagePath])
+  @@index([expiresAt])
+  @@index([deletedAt])
+}
+
+model BillingCustomer {
+  id               String   @id @default(cuid())
+  workspaceId      String   @unique
+  stripeCustomerId String   @unique
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model WorkspaceSubscription {
+  id                    String             @id @default(cuid())
+  workspaceId           String             @unique
+  plan                  CommercialPlan     @default(FREE)
+  interval              BillingInterval    @default(MONTHLY)
+  status                SubscriptionStatus @default(FREE)
+  stripeCustomerId      String?
+  stripeSubscriptionId  String?            @unique
+  stripePriceId         String?
+  latestPaymentStatus   String?
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  cancelAtPeriodEnd     Boolean            @default(false)
+  trialEndsAt           DateTime?
+  canceledAt            DateTime?
+  activatedAt           DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+  @@index([stripeCustomerId])
+  @@index([stripePriceId])
+}
+
+model BillingWebhookEvent {
+  id          String   @id @default(cuid())
+  provider    String
+  eventId     String
+  eventType   String
+  processedAt DateTime @default(now())
+
+  @@unique([provider, eventId])
+  @@index([eventType])
+}
+
+model WorkspaceUsageEvent {
+  id             String         @id @default(cuid())
+  workspaceId    String
+  auditId        String?
+  userId         String?
+  type           UsageEventType
+  quantity       Int            @default(1)
+  metadata       Json           @default("{}")
+  billingPeriodStart DateTime
+  billingPeriodEnd   DateTime
+  idempotencyKey String         @unique
+  createdAt      DateTime       @default(now())
+
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  audit     Audit?       @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, billingPeriodStart, billingPeriodEnd])
+  @@index([auditId])
+  @@index([type])
+}
+
+model WorkspaceOnboarding {
+  id                    String   @id @default(cuid())
+  workspaceId           String   @unique
+  welcomeCompletedAt    DateTime?
+  workspaceConfirmedAt  DateTime?
+  websiteUrl            String?
+  websiteValidatedAt    DateTime?
+  firstAuditId          String?
+  firstAuditStartedAt   DateTime?
+  findingsReviewedAt    DateTime?
+  githubOfferedAt       DateTime?
+  githubConnectedAt     DateTime?
+  firstIssueExportedAt  DateTime?
+  skippedGitHubAt       DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model WorkspaceInvitation {
+  id             String           @id @default(cuid())
+  workspaceId    String
+  email          String
+  role           String
+  tokenHash      String           @unique
+  status         InvitationStatus @default(PENDING)
+  invitedByUserId String
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy User @relation("WorkspaceInvitationInviter", fields: [invitedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([workspaceId, status])
+  @@index([email])
+  @@index([expiresAt])
+}
+
+model EmailEvent {
+  id             String    @id @default(cuid())
+  workspaceId    String?
+  userId         String?
+  recipientEmail String
+  template       String
+  idempotencyKey String    @unique
+  status         String
+  provider       String
+  providerMessageId String?
+  errorMessage   String?
+  sentAt         DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([template])
+  @@index([status])
+}
+
+model WorkspaceAuditLog {
+  id          String   @id @default(cuid())
+  workspaceId String
+  actorUserId String?
+  action      String
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([action])
+}
+
+model WorkspaceDeletionRequest {
+  id             String                  @id @default(cuid())
+  workspaceId    String
+  requestedByUserId String
+  confirmation   String
+  status         WorkspaceDeletionStatus @default(REQUESTED)
+  blockedReason  String?
+  scheduledFor   DateTime?
+  completedAt    DateTime?
+  failedAt       DateTime?
+  failureReason  String?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  workspace Organization @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  requestedBy User @relation(fields: [requestedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([workspaceId, status])
 }
 
 model Report {

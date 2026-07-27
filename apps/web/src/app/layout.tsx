@@ -17,8 +17,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <nav className="nav" aria-label="Primary">
               <Link href="/">Overview</Link>
               <Link href="/dashboard">Dashboard</Link>
+              <a href="/billing">Billing</a>
               <Link href="/projects">Projects</Link>
               <Link href="/projects/new">New Audit</Link>
+              <a href="/onboarding">Onboarding</a>
+              <a href="/settings">Settings</a>
               <Link href="/audits/demo">Audit Report</Link>
             </nav>
           </aside>
@@ -28,4 +31,3 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     </html>
   );
 }
-

@@ -151,8 +151,12 @@ select {
 }
 
 button {
+  align-items: center;
   background: #ffffff;
   cursor: pointer;
+  display: inline-flex;
+  gap: 8px;
+  justify-content: center;
 }
 
 button:hover:not(:disabled) {

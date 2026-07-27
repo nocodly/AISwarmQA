@@ -2,11 +2,13 @@ import { readRuntimeConfig } from "@ai-swarm-qa/config";
 import { getPublicEvidence } from "@ai-swarm-qa/database";
 import { SupabaseStorageProvider } from "@ai-swarm-qa/storage";
 import { jsonErrorFromUnknown } from "../../api/errors";
+import { assertRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ publicEvidenceId: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ publicEvidenceId: string }> }) {
   try {
     const { publicEvidenceId } = await params;
     const config = readRuntimeConfig();
+    assertRateLimit(request, "evidence-public", config.rateLimitEvidenceMax);
     if (!config.supabaseUrl || !config.supabaseServiceRoleKey) {
       return Response.json({ error: { code: "EVIDENCE_STORAGE_NOT_CONFIGURED", message: "Evidence storage is not configured." } }, { status: 503 });
     }
@@ -28,6 +30,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pub
       }
     });
   } catch (error) {
+    const rate = rateLimitResponse(error);
+    if (rate) return rate;
     return jsonErrorFromUnknown(error);
   }
 }
