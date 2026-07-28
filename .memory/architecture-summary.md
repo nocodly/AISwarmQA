@@ -1,15 +1,74 @@
 # Architecture Summary
 
-AI Swarm QA is split into two planes.
+AISwarmQA is a monorepo with a clear separation between the Control Plane and Execution Plane.
 
-The Control Plane owns users, organizations, projects, audits, subscriptions, usage limits, reports, billing, dashboard UI, and public API surfaces. It creates audits and enqueues planning jobs; it does not call AI providers or run browser automation in HTTP requests.
+Control Plane:
 
-The Execution Plane owns planning, mission execution, browser workers, evidence collection, finding generation, deduplication, severity assignment, report generation, and autonomous Browser Agent execution. Planning jobs collect sanitized snapshots, optionally call the AI planner through `packages/ai`, persist `AuditPlan`, and enqueue mission jobs.
+- Authentication.
+- Users.
+- Organizations and workspaces.
+- Projects.
+- Subscriptions and usage limits.
+- Audit creation and audit status.
+- Reports.
+- Billing.
+- Dashboard.
+- GitHub App connection and export UI.
+- Evidence access routes.
 
-Long-running operations move through Redis and BullMQ. PostgreSQL is the source of truth. Prisma owns the database schema. AI providers are accessed only through `packages/ai`. Mission contracts, registry, planner schemas, Browser Agent schemas, redaction helpers, merge policy, status transitions, scoring, and safe interaction labels live in `packages/shared`.
+Execution Plane:
 
-Phase 4 adds one optional `autonomous-browser` mission. The worker remains server-authoritative: the mock decision provider proposes one structured action, the worker validates schema and safety policy, executes only allowlisted tools, persists `BrowserAgentRun` and ordered `BrowserAgentStep` replay history, and sends findings through the central finding pipeline.
+- Audit planning.
+- Browser workers.
+- Mission execution.
+- Autonomous browser agent.
+- Multi-agent swarm.
+- Evidence collection.
+- Raw finding collection.
+- Finding normalization, deduplication, severity assignment.
+- Report generation.
+- GitHub issue export jobs.
 
-Phase 5 adds one optional `browser-swarm` mission. The worker creates role-specific bounded Browser Agents, gives each agent an isolated Playwright context, shares only sanitized coverage fingerprints through `SwarmSharedState`, tracks aggregate steps/provider calls/navigation/screenshot/token/cost budgets, persists `BrowserSwarmRun` and `BrowserSwarmAgent`, links each agent to a replayable `BrowserAgentRun`, and still merges findings through the central pipeline.
+Important boundaries:
 
-Phase 6 connects real Anthropic requests through `packages/ai` with `AnthropicProvider`. Runtime provider selection uses `AI_PROVIDER=mock|anthropic`; mock remains the default. Planner, Browser Agent, and swarm all use provider factories, structured JSON validation, retry/backoff, timeout handling, rate-limit normalization, token/cost accounting, safe request logging, and mock fallback.
+- UI/API requests must not run long browser automation directly.
+- Long-running work belongs in queues and workers.
+- AI provider calls must go through provider abstractions.
+- Mock provider must remain available for deterministic fallback.
+- Anthropic provider must never expose API keys or prompt secrets in logs.
+- Secrets must only come from secure environment variables or platform secret stores.
+- No plaintext credentials should be stored.
+- Private network targets must not be auditable.
+
+Core integrations:
+
+- Next.js web app in `apps/web`.
+- Worker app in `apps/worker`.
+- Shared packages in `packages/*`.
+- Prisma database package in `packages/database`.
+- Runtime config package in `packages/config`.
+- GitHub integration package in `packages/github`.
+- Queue package in `packages/queue`.
+- Storage package in `packages/storage`.
+- AI provider package in `packages/ai`.
+
+Production services:
+
+- Railway web service.
+- Railway worker service.
+- Supabase PostgreSQL.
+- Supabase Auth.
+- Supabase Storage for evidence.
+- Redis for queues.
+- Anthropic for real AI provider mode.
+- GitHub App for installation, repository sync, webhook handling, and issue export.
+- Stripe for SaaS billing.
+
+Design and UX direction:
+
+- Keep app workflows simple and direct.
+- Prefer fast, clear dashboard actions over decorative blocks.
+- Avoid app links that unexpectedly send users back to the marketing site.
+- The dashboard should make it obvious how to start a new audit, see active work, review findings, view evidence, and export to GitHub.
+- Audit detail should be compact, action-first, and findings-first.
+- Finding detail should feel like a GitHub issue preview with real evidence and clear reproduction data.

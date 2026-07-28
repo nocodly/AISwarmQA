@@ -1,10 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { readRuntimeConfig } from "@ai-swarm-qa/config";
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 function createPrismaClient(): PrismaClient {
-  const connectionString = process.env.DATABASE_URL ?? "postgresql://postgres:postgres@localhost:55432/ai_swarm_qa";
+  const connectionString = readRuntimeConfig().databaseUrl;
 
   const adapter = new PrismaPg({ connectionString });
   return new PrismaClient({ adapter });

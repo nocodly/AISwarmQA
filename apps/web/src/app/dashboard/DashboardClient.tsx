@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   AlertCircle,
   ArrowRight,
@@ -135,6 +136,7 @@ const emptyDashboard: DashboardData = {
 };
 
 export function DashboardClient() {
+  const searchParams = useSearchParams();
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -165,10 +167,10 @@ export function DashboardClient() {
   }, []);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("newAudit") === "1") {
+    if (searchParams.get("newAudit") === "1") {
       setLauncherOpen(true);
     }
-  }, []);
+  }, [searchParams]);
 
   const dashboard = data ?? (!loading ? emptyDashboard : null);
   const activeAudits = useMemo(() => data?.recentAudits.filter((audit) => runningStatuses.has(audit.status)) ?? [], [data]);

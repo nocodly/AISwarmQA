@@ -256,6 +256,7 @@ export function EvidenceIndexClient() {
 export function AgentsIndexClient() {
   const { data, error, loading, reload } = useDashboardData();
   const agents = useMemo(() => data?.recentFindings.slice(0, 8).map((finding, index) => ({
+    auditId: finding.auditId,
     id: index + 1,
     task: finding.category,
     status: finding.githubExportStatus === "completed" ? "Exported" : "Reviewed",
@@ -274,7 +275,7 @@ export function AgentsIndexClient() {
         <section className="command-panel">
           <div className="agent-list">
             {agents.map((agent) => (
-              <Link className="agent-row" href={`/audits/${data.recentFindings[agent.id - 1]?.auditId ?? ""}`} key={agent.id}>
+              <Link className="agent-row" href={`/audits/${agent.auditId}`} key={agent.id}>
                 <BrandIcon name="agent" tone={agent.id % 2 ? "purple" : "cyan"} />
                 <strong>Agent #{agent.id}</strong>
                 <span>{agent.status}</span>
