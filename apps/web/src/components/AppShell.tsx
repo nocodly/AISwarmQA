@@ -4,13 +4,19 @@ import type { ReactNode } from "react";
 import { BrandIcon } from "./BrandIcons";
 
 const appNav = [
-  { href: "/dashboard", label: "Dashboard", icon: "browser", tone: "purple" },
-  { href: "/dashboard#audits", label: "Audits", icon: "agent", tone: "lime" },
-  { href: "/dashboard#findings", label: "Findings", icon: "bug", tone: "magenta" },
-  { href: "/dashboard#github", label: "GitHub", icon: "github", tone: "cyan" },
-  { href: "/settings", label: "Team", icon: "private", tone: "lime" },
-  { href: "/billing", label: "Billing", icon: "complete", tone: "orange" },
-  { href: "/settings", label: "Settings", icon: "interaction", tone: "cyan" }
+  { group: "Main", href: "/dashboard", label: "Dashboard", icon: "browser", tone: "purple" },
+  { group: "Main", href: "/projects", label: "Projects", icon: "evidence", tone: "cyan" },
+  { group: "Main", href: "/dashboard#recent-audits", label: "Audits", icon: "agent", tone: "lime" },
+  { group: "Main", href: "/dashboard#recent-findings", label: "Findings", icon: "bug", tone: "magenta" },
+  { group: "Main", href: "/evidence", label: "Evidence", icon: "screenshot", tone: "cyan" },
+  { group: "Main", href: "/github", label: "GitHub", icon: "github", tone: "lime" },
+  { group: "Main", href: "/dashboard#recent-audits", label: "Agents", icon: "interaction", tone: "cyan" },
+  { group: "Main", href: "/dashboard#recent-audits", label: "Reports", icon: "complete", tone: "orange" },
+  { group: "Manage", href: "/github", label: "Integrations", icon: "duplicate", tone: "purple" },
+  { group: "Manage", href: "/settings", label: "Team", icon: "private", tone: "lime" },
+  { group: "Manage", href: "/settings", label: "Notifications", icon: "issue", tone: "magenta" },
+  { group: "Account", href: "/billing", label: "Billing", icon: "complete", tone: "orange" },
+  { group: "Account", href: "/settings", label: "Settings", icon: "interaction", tone: "cyan" }
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -24,13 +30,24 @@ export function AppShell({ children }: { children: ReactNode }) {
           </span>
         </Link>
         <nav className="app-nav" aria-label="Application">
-          {appNav.map((item) => (
-            <Link href={item.href as Route} key={`${item.href}-${item.label}`}>
-              <BrandIcon name={item.icon} tone={item.tone} />
-              {item.label}
-            </Link>
+          {["Main", "Manage", "Account"].map((group) => (
+            <div className="app-nav-group" key={group}>
+              <span>{group}</span>
+              {appNav.filter((item) => item.group === group).map((item) => (
+                <Link href={item.href as Route} key={`${item.href}-${item.label}`}>
+                  <BrandIcon name={item.icon} tone={item.tone} />
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           ))}
         </nav>
+        <div className="sidebar-audit-cta">
+          <BrandIcon name="agent" tone="lime" />
+          <strong>Start your next audit</strong>
+          <p>Let the swarm find bugs before your users do.</p>
+          <Link href="/dashboard">+ New Audit</Link>
+        </div>
       </aside>
       <main className="app-main">{children}</main>
     </div>

@@ -1,5 +1,48 @@
 # Current Task
 
+Continue Phase 10: authenticated product UI, dashboard workflow, and customer-ready MVP experience.
+
+Status: Design and workflow approval phase started on 2026-07-28. The current reference direction is the dark neon AISwarmQA command-center dashboard provided by the user, with strong emphasis on a simple Railway-like operational workflow, clear audit creation, real agent activity, more explanatory text before findings, and no dead navigation.
+
+## Phase 10 Product Direction
+
+- The authenticated app must feel like a premium AI QA command center: dark, technical, structured, data-rich, trustworthy, and alive.
+- The dashboard should be simple for customers: one obvious `New Audit` flow, clear recent work, live audit state, findings, evidence, GitHub exports, usage, and quick actions.
+- The user prefers a Railway-like product UX: clean sidebar, spacious operational canvas, actions visible where work happens, no confusing scattered pages.
+- The dashboard reference includes: greeting, workspace selector, global search, notifications, profile menu, top metrics, live audit card, swarm activity, findings overview, recent findings, GitHub export queue, evidence gallery, recent audits, plan usage, quick actions, and Swarm Core illustration.
+- Before the findings list, include more explanatory text and context so customers understand what was tested, what agents did, why each issue matters, and what to do next.
+- Audit/finding pages must show real captured evidence only. Do not fake screenshots. If no screenshot exists, show a clear evidence-unavailable state and still show text evidence/replay metadata.
+- Dashboard and audit workflow must expose agent work clearly: which agents ran, what pages/actions they checked, what they found, and what is still missing.
+- All buttons, rows, cards, filters, menus, and sidebar links must have real actions or real destinations. Do not add dead controls or unsupported fake integrations.
+- Public landing can stay expressive; authenticated UI should reuse the neon identity in a calmer operational style.
+- Keep all UI copy in English even though the user discusses requirements in Ukrainian.
+
+## Phase 10 Dashboard Approval Gate
+
+Start with Page 1: Dashboard.
+
+Before implementation, provide:
+
+- Desktop dashboard preview/spec.
+- Mobile dashboard preview/spec.
+- Component inventory.
+- Every visible dashboard action and destination/API behavior.
+- Loading, empty, and error states.
+- Permission behavior.
+- Responsive behavior.
+- Animation behavior.
+- Differences from the reference image.
+
+Do not implement all authenticated pages in one pass. Work page by page, with approval before each major page implementation.
+
+## Phase 10 Safety Rules
+
+- Preserve existing Supabase Auth, workspaces, audits, findings, evidence, GitHub App/export, agents, reports, billing, invitations, settings, usage, retention, cancellation, rate limits, queue, worker, Redis, and database behavior.
+- Do not rewrite backend architecture for design polish.
+- Do not show fake product capabilities. If upload, PDF export, manual evidence, ignored/resolved findings, status page, or detailed agent pages are not implemented, either omit them or label them as unavailable until built.
+- Server-side permissions remain authoritative; UI gating is only a usability layer.
+- Avoid exposing stack traces, secrets, tokens, private keys, signed storage URLs, or infrastructure credentials in UI/logs.
+
 Continue Phase 8B: production commercial activation and operational completion.
 
 Status: In progress on 2026-07-27. Phase 8 SaaS foundation commit `1e37084` is local and ahead of `origin/main`. Stripe product/prices/Billing Portal/webhook were created for AISwarmQA Pro at $79/month and $790/year, and Stripe runtime variables were placed on Railway web only. New source changes add Redis-backed rate limiting, cooperative audit cancellation, and scheduled evidence retention cleanup.

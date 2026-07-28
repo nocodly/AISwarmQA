@@ -259,7 +259,7 @@ export async function getAuditWorkspaceId(auditId: string) {
 }
 
 export async function getDashboardOverview(input: { workspaceId: string }) {
-  const [summary, recentAudits, githubExports] = await Promise.all([
+  const [summary, recentAudits, severityGroups, recentFindings, githubExports, recentGitHubExports, recentEvidence] = await Promise.all([
     getWorkspaceUsageSummary(input.workspaceId),
     prisma.audit.findMany({
       where: { project: { organizationId: input.workspaceId } },
@@ -267,10 +267,55 @@ export async function getDashboardOverview(input: { workspaceId: string }) {
       take: 8,
       include: { findings: true, githubExportBatches: true }
     }),
-    prisma.findingGitHubExport.count({ where: { githubConnection: { workspaceId: input.workspaceId }, status: "CREATED" } })
+    prisma.finding.groupBy({
+      by: ["severity"],
+      where: { audit: { project: { organizationId: input.workspaceId } } },
+      _count: { _all: true }
+    }),
+    prisma.finding.findMany({
+      where: { audit: { project: { organizationId: input.workspaceId } } },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      include: {
+        audit: { select: { id: true, targetUrl: true } },
+        evidence: { take: 1, orderBy: { createdAt: "desc" } },
+        githubExports: { take: 1, orderBy: { updatedAt: "desc" } }
+      }
+    }),
+    prisma.findingGitHubExport.count({ where: { githubConnection: { workspaceId: input.workspaceId }, status: "CREATED" } }),
+    prisma.findingGitHubExport.findMany({
+      where: { githubConnection: { workspaceId: input.workspaceId } },
+      orderBy: { updatedAt: "desc" },
+      take: 5,
+      include: {
+        finding: { select: { title: true, severity: true, affectedUrl: true } },
+        audit: { select: { id: true, targetUrl: true } },
+        repository: { select: { fullName: true } }
+      }
+    }),
+    prisma.findingEvidence.findMany({
+      where: { finding: { audit: { project: { organizationId: input.workspaceId } } } },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+      include: {
+        finding: {
+          select: {
+            id: true,
+            title: true,
+            severity: true,
+            audit: { select: { id: true, targetUrl: true } }
+          }
+        }
+      }
+    })
   ]);
+  const severityCounts = severityGroups.reduce<Record<string, number>>((counts, group) => {
+    counts[group.severity.toLowerCase()] = group._count._all;
+    return counts;
+  }, {});
   return {
     summary,
+    severityCounts,
     recentAudits: recentAudits.map((audit) => ({
       id: audit.id,
       targetUrl: audit.targetUrl,
@@ -280,6 +325,46 @@ export async function getDashboardOverview(input: { workspaceId: string }) {
       githubExportStatus: audit.githubExportBatches[0]?.status.toLowerCase() ?? "none",
       createdAt: audit.createdAt.toISOString(),
       completedAt: audit.completedAt?.toISOString() ?? null
+    })),
+    recentFindings: recentFindings.map((finding) => ({
+      id: finding.id,
+      auditId: finding.auditId,
+      auditTargetUrl: finding.audit.targetUrl,
+      category: finding.category.toLowerCase(),
+      severity: finding.severity.toLowerCase(),
+      title: finding.title,
+      summary: finding.summary,
+      affectedUrl: finding.affectedUrl,
+      occurrenceCount: finding.occurrenceCount,
+      evidenceCount: finding.evidence.length,
+      githubExportStatus: finding.githubExports[0]?.status.toLowerCase() ?? "not_exported",
+      createdAt: finding.createdAt.toISOString()
+    })),
+    recentGitHubExports: recentGitHubExports.map((githubExport) => ({
+      id: githubExport.id,
+      auditId: githubExport.auditId,
+      findingId: githubExport.findingId,
+      title: githubExport.finding.title,
+      severity: githubExport.finding.severity.toLowerCase(),
+      affectedUrl: githubExport.finding.affectedUrl,
+      repository: githubExport.repository.fullName,
+      status: githubExport.status.toLowerCase(),
+      issueNumber: githubExport.githubIssueNumber,
+      issueUrl: githubExport.githubIssueUrl,
+      updatedAt: githubExport.updatedAt.toISOString()
+    })),
+    recentEvidence: recentEvidence.map((evidence) => ({
+      id: evidence.id,
+      findingId: evidence.findingId,
+      auditId: evidence.finding.audit.id,
+      findingTitle: evidence.finding.title,
+      severity: evidence.finding.severity.toLowerCase(),
+      type: evidence.type,
+      contentType: evidence.storageContentType,
+      sizeBytes: evidence.storageSizeBytes,
+      publicEvidenceId: evidence.publicEvidenceId,
+      externalSharingEnabled: evidence.externalSharingEnabled && !evidence.revokedAt,
+      createdAt: evidence.createdAt.toISOString()
     })),
     githubIssuesExported: githubExports
   };
