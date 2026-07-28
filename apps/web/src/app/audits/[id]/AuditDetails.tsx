@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Download, ExternalLink, FileDown, Share2, UploadCloud } from "lucide-react";
+import { GitHubLogo } from "@/components/BrandIcons";
 
 type AuditSummary = {
   id: string;
@@ -251,6 +253,32 @@ function formatCounts(counts: Record<string, number>) {
   return entries.length > 0 ? entries.map(([key, value]) => `${key}: ${value}`).join(" / ") : "none";
 }
 
+function severityClass(severity: string) {
+  const normalized = severity.toLowerCase();
+  if (normalized.includes("critical")) return "critical";
+  if (normalized.includes("high")) return "high";
+  if (normalized.includes("medium")) return "medium";
+  if (normalized.includes("low")) return "low";
+  return "info";
+}
+
+function evidenceImageUrl(finding: Finding) {
+  const evidence = finding.evidence.find((item) => {
+    const value = item.content ?? item.localPath ?? "";
+    return /^https?:\/\//.test(value) && (item.type.toLowerCase().includes("screenshot") || /\.(png|jpe?g|webp)$/i.test(value));
+  });
+  return evidence?.content ?? evidence?.localPath ?? null;
+}
+
+function shortUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return `${url.host}${url.pathname === "/" ? "" : url.pathname}`;
+  } catch {
+    return value;
+  }
+}
+
 export function AuditDetails({ auditId }: { auditId: string }) {
   const [data, setData] = useState<AuditResponse | null>(null);
   const [findings, setFindings] = useState<Finding[]>([]);
@@ -265,9 +293,15 @@ export function AuditDetails({ auditId }: { auditId: string }) {
   const [includeExternalEvidence, setIncludeExternalEvidence] = useState(false);
   const [cancelMessage, setCancelMessage] = useState<string | null>(null);
   const [canceling, setCanceling] = useState(false);
+  const [openedFindingId, setOpenedFindingId] = useState<string | null>(null);
 
   const audit = data?.audit ?? null;
   const isTerminal = useMemo(() => (audit ? terminalStatuses.has(audit.status) : false), [audit]);
+  const openedFinding = useMemo(
+    () => findings.find((finding) => finding.id === openedFindingId) ?? findings[0] ?? null,
+    [findings, openedFindingId]
+  );
+  const selectedRepository = githubStatus?.repositories.find((repository) => repository.id === selectedRepositoryId) ?? null;
 
   useEffect(() => {
     let isActive = true;
@@ -322,7 +356,10 @@ export function AuditDetails({ auditId }: { auditId: string }) {
     if (findings.length > 0 && selectedFindingIds.length === 0) {
       setSelectedFindingIds(findings.map((finding) => finding.id));
     }
-  }, [findings, selectedFindingIds.length]);
+    if (findings.length > 0 && !openedFindingId) {
+      setOpenedFindingId(findings[0]!.id);
+    }
+  }, [findings, openedFindingId, selectedFindingIds.length]);
 
   useEffect(() => {
     if (audit?.status !== "completed") {
@@ -525,7 +562,106 @@ export function AuditDetails({ auditId }: { auditId: string }) {
 
   return (
     <>
-      <section className="audit-progress-hero">
+      <section className="audit-report-topbar">
+        <div>
+          <p className="eyebrow">Audit {audit.id}</p>
+          <h1>Audit report</h1>
+          <p>{shortUrl(audit.targetUrl)} · {audit.status} · {findings.length} finding{findings.length === 1 ? "" : "s"}</p>
+        </div>
+        <div className="audit-action-buttons">
+          <button type="button" onClick={() => downloadReport("json")} disabled={findings.length === 0}>
+            <Download aria-hidden="true" size={17} /> Download JSON
+          </button>
+          <button type="button" onClick={() => downloadReport("csv")} disabled={findings.length === 0}>
+            <FileDown aria-hidden="true" size={17} /> Download CSV
+          </button>
+          <button type="button" onClick={() => void shareReport()}>
+            <Share2 aria-hidden="true" size={17} /> Share
+          </button>
+          <button type="button" onClick={() => void cancelAudit()} disabled={isTerminal || canceling}>
+            {canceling ? "Cancelling" : "Cancel"}
+          </button>
+          <button type="button" onClick={() => void previewGitHubExport()} disabled={selectedFindingIds.length === 0}>
+            <GitHubLogo /> Preview export
+          </button>
+          <button className="primary-report-action" type="button" onClick={() => void confirmGitHubExport()} disabled={!githubPreview}>
+            <UploadCloud aria-hidden="true" size={17} /> Create issues
+          </button>
+        </div>
+      </section>
+
+      <section className="audit-export-strip">
+        <div className="export-target">
+          <GitHubLogo />
+          <div>
+            <strong>{selectedRepository ? selectedRepository.fullName : githubStatus?.connected ? "Choose a GitHub repository" : "GitHub export"}</strong>
+            <p>
+              {githubPreview
+                ? `${githubPreview.issuesToCreate} issue${githubPreview.issuesToCreate === 1 ? "" : "s"} ready. ${githubPreview.alreadyExportedCount} already exported.`
+                : "Preview first, then create issues only after explicit confirmation."}
+            </p>
+          </div>
+        </div>
+        <div className="export-controls">
+          <label>
+            <input
+              type="checkbox"
+              checked={excludeInformational}
+              onChange={(event) => setExcludeInformational(event.target.checked)}
+            />{" "}
+            Skip informational
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={includeExternalEvidence}
+              onChange={(event) => {
+                setIncludeExternalEvidence(event.target.checked);
+                setGitHubPreview(null);
+              }}
+            />{" "}
+            Public evidence route
+          </label>
+          {githubStatus?.repositories.length ? (
+            <select value={selectedRepositoryId} onChange={(event) => setSelectedRepositoryId(event.target.value)}>
+              {githubStatus.repositories.map((repository) => (
+                <option value={repository.id} key={repository.id}>
+                  {repository.fullName}
+                  {repository.private ? " private" : " public"}
+                  {repository.archived ? " archived" : ""}
+                  {!repository.issuesEnabled ? " issues disabled" : ""}
+                </option>
+              ))}
+            </select>
+          ) : githubStatus?.connectUrl ? (
+            <a className="internal-link" href={`${githubStatus.connectUrl}?returnUrl=${encodeURIComponent(`/audits/${auditId}`)}`}>
+              Connect GitHub <ExternalLink aria-hidden="true" size={15} />
+            </a>
+          ) : null}
+        </div>
+        {githubMessage ? <p className="export-message">{githubMessage}</p> : null}
+        {cancelMessage ? <p className="export-message">{cancelMessage}</p> : null}
+        {githubPreview ? (
+          <div className="export-preview-summary">
+            <strong>Preview ready:</strong> {githubPreview.selectedCount} selected / {githubPreview.issuesToCreate} new issue
+            {githubPreview.issuesToCreate === 1 ? "" : "s"} / {githubPreview.alreadyExportedCount} duplicate
+            {githubPreview.alreadyExportedCount === 1 ? "" : "s"}.
+            {githubPreview.warnings.length > 0 ? <span> {githubPreview.warnings.join(" ")}</span> : null}
+          </div>
+        ) : null}
+        {githubBatch ? (
+          <div className="export-preview-summary">
+            <strong>Export {githubBatch.batch.status}:</strong> {githubBatch.batch.createdCount} created / {githubBatch.batch.failedCount} failed.
+            {githubBatch.batch.failedCount > 0 ? (
+              <button type="button" onClick={() => void retryGitHubExport()}>
+                Retry failed
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+
+      <section className="audit-progress-hero compact-report-hero">
         <div>
           <p className="eyebrow">Live audit progress</p>
           <h2>{audit.status === "completed" ? "Report ready." : "Agents are checking the product."}</h2>
@@ -556,7 +692,111 @@ export function AuditDetails({ auditId }: { auditId: string }) {
         </article>
       </section>
 
-      <section className="panel" style={{ marginTop: 16 }}>
+      <section className="report-findings-layout">
+        <div className="findings-feed-panel">
+          <div className="report-section-heading">
+            <div>
+              <p className="eyebrow">Findings</p>
+              <h2>Issues to review</h2>
+            </div>
+            <div className="selection-controls">
+              <button type="button" onClick={() => setSelectedFindingIds(findings.map((finding) => finding.id))} disabled={findings.length === 0}>
+                Select all
+              </button>
+              <button type="button" onClick={() => setSelectedFindingIds([])} disabled={selectedFindingIds.length === 0}>
+                Clear
+              </button>
+            </div>
+          </div>
+          {audit.status === "completed" && findings.length === 0 ? (
+            <div className="empty-report-state">
+              <CheckCircle2 aria-hidden="true" size={24} />
+              <strong>No findings were found in this run.</strong>
+              <p>This does not mean the site is bug-free. Try a deeper authenticated or checkout-focused audit next.</p>
+            </div>
+          ) : null}
+          <div className="finding-feed">
+            {findings.map((finding) => (
+              <article
+                className={openedFinding?.id === finding.id ? "finding-feed-card active" : "finding-feed-card"}
+                key={finding.id}
+                onClick={() => setOpenedFindingId(finding.id)}
+              >
+                <label className="finding-select" onClick={(event) => event.stopPropagation()}>
+                  <input type="checkbox" checked={selectedFindingIds.includes(finding.id)} onChange={() => toggleFinding(finding.id)} />
+                </label>
+                <div className={`severity-tag ${severityClass(finding.severity)}`}>{finding.severity}</div>
+                <div className="finding-feed-body">
+                  <h3>{finding.title}</h3>
+                  <p>{finding.summary}</p>
+                  <div className="finding-meta-row">
+                    <span>{finding.category}</span>
+                    <span>{shortUrl(finding.affectedUrl)}</span>
+                    <span>{finding.occurrenceCount} occurrence{finding.occurrenceCount === 1 ? "" : "s"}</span>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        {openedFinding ? (
+          <aside className="issue-preview-panel">
+            <div className="issue-preview-header">
+              <div>
+                <div className={`severity-tag ${severityClass(openedFinding.severity)}`}>{openedFinding.severity}</div>
+                <h2>{openedFinding.title}</h2>
+                <p>{openedFinding.description || openedFinding.summary}</p>
+              </div>
+            </div>
+
+            <div className="evidence-shot">
+              {evidenceImageUrl(openedFinding) ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={evidenceImageUrl(openedFinding) ?? ""} alt="Finding evidence screenshot" />
+              ) : (
+                <div className="evidence-placeholder">
+                  <span>{shortUrl(openedFinding.affectedUrl)}</span>
+                  <strong>{openedFinding.title}</strong>
+                  <p>{openedFinding.actualBehavior || openedFinding.summary}</p>
+                </div>
+              )}
+              <svg className="marker-circle" viewBox="0 0 420 220" aria-hidden="true">
+                <path d="M88 64 C145 22 286 34 338 88 C380 132 318 190 190 178 C75 167 34 113 88 64 Z" />
+                <path d="M294 156 L366 193 M352 160 L366 193 L330 188" />
+              </svg>
+              <span className="marker-note">look here</span>
+            </div>
+
+            <div className="issue-body">
+              <section>
+                <h3>Affected page</h3>
+                <p>{openedFinding.affectedUrl}</p>
+              </section>
+              <section>
+                <h3>Actual behavior</h3>
+                <p>{openedFinding.actualBehavior || "No actual behavior was recorded."}</p>
+              </section>
+              <section>
+                <h3>Expected behavior</h3>
+                <p>{openedFinding.expectedBehavior || "No expected behavior was recorded."}</p>
+              </section>
+              <section>
+                <h3>Reproduction steps</h3>
+                <ol>
+                  {openedFinding.stepsToReproduce.length > 0 ? openedFinding.stepsToReproduce.map((step) => <li key={step}>{step}</li>) : <li>Open the affected page and follow the captured audit path.</li>}
+                </ol>
+              </section>
+              <section>
+                <h3>Evidence</h3>
+                <p>{openedFinding.evidence.length} evidence item{openedFinding.evidence.length === 1 ? "" : "s"} captured.</p>
+              </section>
+            </div>
+          </aside>
+        ) : null}
+      </section>
+
+      <section className="panel technical-report-panel" style={{ marginTop: 16 }}>
         <h2>Summary</h2>
         <ul className="status-list">
           <li>
@@ -898,192 +1138,6 @@ export function AuditDetails({ auditId }: { auditId: string }) {
         </section>
       ) : null}
 
-      <section className="panel" style={{ marginTop: 16 }}>
-        <h2>Actions</h2>
-        <div className="toolbar">
-          <button type="button" onClick={() => downloadReport("json")} disabled={findings.length === 0}>
-            Download JSON
-          </button>
-          <button type="button" onClick={() => downloadReport("csv")} disabled={findings.length === 0}>
-            Download CSV
-          </button>
-          <button type="button" onClick={() => void shareReport()}>
-            Share report
-          </button>
-          <button type="button" onClick={() => void cancelAudit()} disabled={isTerminal || canceling}>
-            {canceling ? "Cancelling" : "Cancel audit"}
-          </button>
-        </div>
-        {cancelMessage ? <p>{cancelMessage}</p> : null}
-        <div className="mission-list" style={{ marginTop: 12 }}>
-          <article className="mission-row">
-            <div>
-              <div className="badge">GitHub</div>
-              <h3>Send findings to GitHub</h3>
-              {githubStatus?.manualSetupRequired ? (
-                <p>GitHub App credentials are not configured yet. Use the Phase 7 setup guide before enabling production issue creation.</p>
-              ) : null}
-              {!githubStatus?.connected && githubStatus?.connectUrl ? (
-                <p>
-                  <a href={`${githubStatus.connectUrl}?returnUrl=${encodeURIComponent(`/audits/${auditId}`)}`}>Connect GitHub</a>
-                </p>
-              ) : null}
-              <p>
-                Selected: {selectedFindingIds.length} finding{selectedFindingIds.length === 1 ? "" : "s"}
-              </p>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={excludeInformational}
-                  onChange={(event) => setExcludeInformational(event.target.checked)}
-                />{" "}
-                Exclude informational findings
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={includeExternalEvidence}
-                  onChange={(event) => {
-                    setIncludeExternalEvidence(event.target.checked);
-                    setGitHubPreview(null);
-                  }}
-                />{" "}
-                Include externally viewable evidence links
-              </label>
-              {githubStatus?.repositories.length ? (
-                <select value={selectedRepositoryId} onChange={(event) => setSelectedRepositoryId(event.target.value)}>
-                  {githubStatus.repositories.map((repository) => (
-                    <option value={repository.id} key={repository.id}>
-                      {repository.fullName}
-                      {repository.private ? " private" : " public"}
-                      {repository.archived ? " archived" : ""}
-                      {!repository.issuesEnabled ? " issues disabled" : ""}
-                    </option>
-                  ))}
-                </select>
-              ) : null}
-              {githubMessage ? <p>{githubMessage}</p> : null}
-              {githubPreview ? (
-                <details open>
-                  <summary>
-                    Preview {githubPreview.selectedCount} issue{githubPreview.selectedCount === 1 ? "" : "s"} for {githubPreview.repository.fullName}
-                  </summary>
-                  <ul>
-                    {githubPreview.issues.map((issue) => (
-                      <li key={issue.findingId}>
-                        {issue.title} ({issue.labels.join(", ")})
-                        {issue.alreadyExported ? " - already exported" : ""}
-                        {!issue.evidenceAvailable ? " - no external evidence" : ""}
-                      </li>
-                    ))}
-                  </ul>
-                  {githubPreview.warnings.length > 0 ? <p>{githubPreview.warnings.join(" ")}</p> : null}
-                  <p>
-                    Issues to create: {githubPreview.issuesToCreate}. Already exported: {githubPreview.alreadyExportedCount}.
-                  </p>
-                  <p>Estimated GitHub API requests: {githubPreview.estimatedApiRequests}</p>
-                </details>
-              ) : null}
-              {githubBatch ? (
-                <details open>
-                  <summary>
-                    Export {githubBatch.batch.status}: {githubBatch.batch.createdCount} created / {githubBatch.batch.failedCount} failed
-                  </summary>
-                  <div className="mission-list" style={{ marginTop: 8 }}>
-                    {githubBatch.exports.map((item) => (
-                      <article className="card" key={item.id}>
-                        <div className="badge">{item.status}</div>
-                        <p>{item.findingTitle}</p>
-                        {item.githubIssueUrl ? (
-                          <p>
-                            <a href={item.githubIssueUrl} target="_blank" rel="noreferrer">
-                              Open GitHub Issue #{item.githubIssueNumber}
-                            </a>
-                          </p>
-                        ) : null}
-                        {item.errorMessage ? <p className="error-text">{item.errorMessage}</p> : null}
-                      </article>
-                    ))}
-                  </div>
-                  {githubBatch.batch.failedCount > 0 ? (
-                    <button type="button" onClick={() => void retryGitHubExport()}>
-                      Retry failed exports
-                    </button>
-                  ) : null}
-                </details>
-              ) : null}
-            </div>
-            <div className="mission-meta">
-              <button type="button" onClick={() => setSelectedFindingIds(findings.map((finding) => finding.id))} disabled={findings.length === 0}>
-                Select all
-              </button>
-              <button type="button" onClick={() => setSelectedFindingIds([])} disabled={selectedFindingIds.length === 0}>
-                Clear
-              </button>
-              <button type="button" onClick={() => void previewGitHubExport()} disabled={selectedFindingIds.length === 0}>
-                Preview GitHub export
-              </button>
-              <button type="button" onClick={() => void confirmGitHubExport()} disabled={!githubPreview}>
-                Create {githubPreview?.issuesToCreate ?? selectedFindingIds.length} GitHub Issues
-              </button>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section className="panel" style={{ marginTop: 16 }}>
-        <h2>Findings</h2>
-        {audit.status === "completed" && findings.length === 0 ? (
-          <p>No issues were found by this limited deterministic scan. This does not mean the site is bug-free.</p>
-        ) : null}
-        {findings.map((finding) => (
-          <article className="card" key={finding.id} style={{ marginTop: 12 }}>
-            <div className="badge">
-              {finding.severity} / {finding.category}
-            </div>
-            <label>
-              <input type="checkbox" checked={selectedFindingIds.includes(finding.id)} onChange={() => toggleFinding(finding.id)} /> Select for GitHub export
-            </label>
-            <h2 style={{ marginTop: 12 }}>{finding.title}</h2>
-            <p>{finding.summary}</p>
-            <p>
-              <strong>Affected URL:</strong> {finding.affectedUrl}
-            </p>
-            <p>
-              <strong>Source missions:</strong> {finding.sourceMissionTypes.join(", ") || "unknown"} ({finding.occurrenceCount} occurrence
-              {finding.occurrenceCount === 1 ? "" : "s"})
-            </p>
-            <p>
-              <strong>Actual:</strong> {finding.actualBehavior}
-            </p>
-            <p>
-              <strong>Expected:</strong> {finding.expectedBehavior}
-            </p>
-            <ol>
-              {finding.stepsToReproduce.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-            <details>
-              <summary>Evidence</summary>
-              {finding.evidence.map((evidence) => (
-                <pre className="evidence" key={evidence.id}>
-                  {JSON.stringify(
-                    {
-                      type: evidence.type,
-                      content: evidence.content,
-                      localPath: evidence.localPath,
-                      metadata: evidence.metadata
-                    },
-                    null,
-                    2
-                  )}
-                </pre>
-              ))}
-            </details>
-          </article>
-        ))}
-      </section>
     </>
   );
 }
