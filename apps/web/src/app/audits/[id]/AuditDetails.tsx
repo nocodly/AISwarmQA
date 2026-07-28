@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Download, ExternalLink, FileDown, Share2, UploadCloud } from "lucide-react";
+import { Bot, CameraOff, CheckCircle2, Download, ExternalLink, FileDown, Share2, UploadCloud } from "lucide-react";
 import { GitHubLogo } from "@/components/BrandIcons";
 
 type AuditSummary = {
@@ -301,7 +301,43 @@ export function AuditDetails({ auditId }: { auditId: string }) {
     () => findings.find((finding) => finding.id === openedFindingId) ?? findings[0] ?? null,
     [findings, openedFindingId]
   );
+  const openedEvidenceImage = useMemo(() => (openedFinding ? evidenceImageUrl(openedFinding) : null), [openedFinding]);
   const selectedRepository = githubStatus?.repositories.find((repository) => repository.id === selectedRepositoryId) ?? null;
+  const agentActivity = useMemo(() => {
+    const swarmAgents =
+      data?.browserSwarmRuns.flatMap((swarm) =>
+        swarm.agents.map((agent) => ({
+          id: agent.id,
+          eyebrow: agent.role,
+          title: agent.objective,
+          status: agent.status,
+          detail: `${agent.stepsUsed} steps / ${agent.findingsCount} findings`,
+          routes: agent.routesVisited.slice(0, 4),
+          footer: swarm.summary ?? swarm.terminalReason ?? `${swarm.agentsCompleted}/${swarm.agentsCreated} swarm agents completed`
+        }))
+      ) ?? [];
+    const browserAgents =
+      data?.browserAgentRuns.map((run) => ({
+        id: run.id,
+        eyebrow: `${run.provider} browser agent`,
+        title: run.objective,
+        status: run.status,
+        detail: `${run.stepsUsed}/${run.maxSteps} steps / ${run.providerCalls} provider calls`,
+        routes: Array.from(new Set(run.steps.flatMap((step) => [step.urlBefore, step.urlAfter]).filter(Boolean) as string[])).slice(0, 4),
+        footer: run.summary ?? run.terminalReason ?? "Replay captured for this mission."
+      })) ?? [];
+    const missions =
+      data?.missions.map((mission) => ({
+        id: mission.id,
+        eyebrow: mission.role,
+        title: mission.objective,
+        status: mission.status,
+        detail: `${mission.findingCount} findings / ${mission.attemptCount}/${mission.maxAttempts} attempts`,
+        routes: mission.planning?.targetRoutes?.slice(0, 4) ?? [],
+        footer: mission.resultSummary ?? mission.failureReason ?? mission.planning?.aiReason ?? "Mission state recorded."
+      })) ?? [];
+    return swarmAgents.length > 0 ? swarmAgents : browserAgents.length > 0 ? browserAgents : missions;
+  }, [data]);
 
   useEffect(() => {
     let isActive = true;
@@ -309,7 +345,10 @@ export function AuditDetails({ auditId }: { auditId: string }) {
 
     async function load() {
       try {
-        const auditResponse = await fetch(`/api/audits/${auditId}`, { cache: "no-store" });
+        const [auditResponse, findingsResponse] = await Promise.all([
+          fetch(`/api/audits/${auditId}`, { cache: "no-store" }),
+          fetch(`/api/audits/${auditId}/findings`, { cache: "no-store" })
+        ]);
         const auditBody = await auditResponse.json();
 
         if (!auditResponse.ok) {
@@ -324,10 +363,9 @@ export function AuditDetails({ auditId }: { auditId: string }) {
         const nextData = auditBody as AuditResponse;
         setData(nextData);
 
-        if (nextData.audit.status === "completed") {
-          const findingsResponse = await fetch(`/api/audits/${auditId}/findings`, { cache: "no-store" });
+        if (findingsResponse.ok) {
           const findingsBody = await findingsResponse.json();
-          if (findingsResponse.ok && isActive) {
+          if (isActive) {
             setFindings(findingsBody.findings);
           }
         }
@@ -565,7 +603,7 @@ export function AuditDetails({ auditId }: { auditId: string }) {
       <section className="audit-report-topbar">
         <div>
           <p className="eyebrow">Audit {audit.id}</p>
-          <h1>Audit report</h1>
+          <h1>Report ready</h1>
           <p>{shortUrl(audit.targetUrl)} · {audit.status} · {findings.length} finding{findings.length === 1 ? "" : "s"}</p>
         </div>
         <div className="audit-action-buttons">
@@ -661,35 +699,30 @@ export function AuditDetails({ auditId }: { auditId: string }) {
         ) : null}
       </section>
 
-      <section className="audit-progress-hero compact-report-hero">
+      <section className="report-status-strip" aria-label="Audit summary">
         <div>
-          <p className="eyebrow">Live audit progress</p>
-          <h2>{audit.status === "completed" ? "Report ready." : "Agents are checking the product."}</h2>
-          <p>
-            AISwarmQA verifies routes, button intent, forms, auth gates, evidence, and GitHub-ready reproduction steps for {audit.targetUrl}.
-          </p>
+          <span className="status-kicker">Status</span>
+          <strong>{audit.status}</strong>
         </div>
-        <div className="progress-rail" aria-label="Audit pipeline">
+        <div>
+          <span className="status-kicker">Findings</span>
+          <strong>{audit.findingCount}</strong>
+        </div>
+        <div>
+          <span className="status-kicker">Score</span>
+          <strong>{data.report?.overallScore ?? "-"}</strong>
+        </div>
+        <div>
+          <span className="status-kicker">Completed</span>
+          <strong>{formatDate(audit.completedAt)}</strong>
+        </div>
+        <div className="mini-progress-rail">
           {["validating", "planning", "running", "analyzing", "completed"].map((status) => (
             <span className={audit.status === status || (status === "completed" && audit.status === "generating_report") ? "active" : ""} key={status}>
               {status}
             </span>
           ))}
         </div>
-      </section>
-      <section className="grid">
-        <article className="card">
-          <div className="metric">{audit.findingCount}</div>
-          <p>Findings</p>
-        </article>
-        <article className="card">
-          <div className="metric">{audit.status}</div>
-          <p>Status</p>
-        </article>
-        <article className="card">
-          <div className="metric">{data.report?.overallScore ?? "-"}</div>
-          <p>Score</p>
-        </article>
       </section>
 
       <section className="report-findings-layout">
@@ -751,21 +784,26 @@ export function AuditDetails({ auditId }: { auditId: string }) {
             </div>
 
             <div className="evidence-shot">
-              {evidenceImageUrl(openedFinding) ? (
+              {openedEvidenceImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={evidenceImageUrl(openedFinding) ?? ""} alt="Finding evidence screenshot" />
+                <img src={openedEvidenceImage} alt="Finding evidence screenshot" />
               ) : (
-                <div className="evidence-placeholder">
+                <div className="real-evidence-unavailable">
+                  <CameraOff aria-hidden="true" size={34} />
                   <span>{shortUrl(openedFinding.affectedUrl)}</span>
-                  <strong>{openedFinding.title}</strong>
-                  <p>{openedFinding.actualBehavior || openedFinding.summary}</p>
+                  <strong>Real screenshot unavailable</strong>
+                  <p>This finding still includes captured text evidence, affected URL, and replay metadata. Screenshot markup is shown only when a real evidence image is stored.</p>
                 </div>
               )}
-              <svg className="marker-circle" viewBox="0 0 420 220" aria-hidden="true">
-                <path d="M88 64 C145 22 286 34 338 88 C380 132 318 190 190 178 C75 167 34 113 88 64 Z" />
-                <path d="M294 156 L366 193 M352 160 L366 193 L330 188" />
-              </svg>
-              <span className="marker-note">look here</span>
+              {openedEvidenceImage ? (
+                <>
+                  <svg className="marker-circle" viewBox="0 0 420 220" aria-hidden="true">
+                    <path d="M88 64 C145 22 286 34 338 88 C380 132 318 190 190 178 C75 167 34 113 88 64 Z" />
+                    <path d="M294 156 L366 193 M352 160 L366 193 L330 188" />
+                  </svg>
+                  <span className="marker-note">look here</span>
+                </>
+              ) : null}
             </div>
 
             <div className="issue-body">
@@ -795,6 +833,60 @@ export function AuditDetails({ auditId }: { auditId: string }) {
           </aside>
         ) : null}
       </section>
+
+      <section className="agent-activity-panel">
+        <div className="report-section-heading">
+          <div>
+            <p className="eyebrow">Agent activity</p>
+            <h2>Who checked what</h2>
+          </div>
+          <p>
+            {data.progress.completed} completed / {data.progress.failed} failed / {data.progress.running} running / {data.progress.queued} queued
+          </p>
+        </div>
+        <div className="agent-activity-grid">
+          {agentActivity.slice(0, 6).map((agent) => (
+            <article className="agent-activity-card" key={agent.id}>
+              <div className="agent-icon">
+                <Bot aria-hidden="true" size={18} />
+              </div>
+              <div>
+                <p className="eyebrow">{agent.eyebrow}</p>
+                <h3>{agent.title}</h3>
+                <p>{agent.footer}</p>
+                <div className="finding-meta-row">
+                  <span>{agent.status}</span>
+                  <span>{agent.detail}</span>
+                  {agent.routes.map((route) => (
+                    <span key={`${agent.id}-${route}`}>{shortUrl(route)}</span>
+                  ))}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="product-context-panel">
+        <div>
+          <p className="eyebrow">Expected behavior context</p>
+          <h2>Give agents the product map</h2>
+          <p>
+            Strong audits need more than visuals. Add a sitemap, button destination map, auth test account, forbidden actions, brand rules, and critical user journeys so agents compare the live site against the intended product behavior.
+          </p>
+        </div>
+        <div className="context-pill-grid">
+          <span>Sitemap</span>
+          <span>Button map</span>
+          <span>Auth flows</span>
+          <span>Design rules</span>
+          <span>Critical journeys</span>
+          <span>Forbidden actions</span>
+        </div>
+      </section>
+
+      <details className="technical-details">
+        <summary>Technical run data</summary>
 
       <section className="panel technical-report-panel" style={{ marginTop: 16 }}>
         <h2>Summary</h2>
@@ -1138,6 +1230,7 @@ export function AuditDetails({ auditId }: { auditId: string }) {
         </section>
       ) : null}
 
+      </details>
     </>
   );
 }
