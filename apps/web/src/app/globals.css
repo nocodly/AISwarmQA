@@ -5879,3 +5879,183 @@ a.ghost-button:hover {
     padding: 13px;
   }
 }
+
+/* Phase 10 repair: remove app chrome and restore compact spacing after open-layout pass. */
+.app-shell *,
+.app-shell *::before,
+.app-shell *::after {
+  box-shadow: none !important;
+}
+
+.app-shell button,
+.app-shell a,
+.app-shell input,
+.app-shell textarea,
+.app-shell select,
+.app-shell .command-metric-card,
+.app-shell .command-panel,
+.app-shell .live-audit-card,
+.app-shell .agent-context-strip,
+.app-shell .hub-card,
+.app-shell .audit-project-card,
+.app-shell .report-section,
+.app-shell .issue-preview-panel,
+.app-shell .finding-feed-card,
+.app-shell .product-context-panel,
+.app-shell .audit-export-strip,
+.app-shell .report-status-strip,
+.app-shell .agent-activity-card,
+.app-shell .dashboard-error,
+.app-shell .settings-panel,
+.app-shell .billing-card,
+.app-shell .finding-mini-row,
+.app-shell .export-mini-row,
+.app-shell .audit-table-row,
+.app-shell .agent-row,
+.app-shell .quick-action-disabled,
+.app-shell .evidence-thumb,
+.app-shell .workspace-switcher,
+.app-shell .profile-chip,
+.app-shell .icon-command-button,
+.app-shell .command-search,
+.app-shell .sidebar-audit-cta,
+.app-shell .severity-pill,
+.app-shell .finding-severity-badge,
+.app-shell .report-agent-badge {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+.app-main {
+  padding: clamp(34px, 4vw, 56px);
+}
+
+.command-dashboard-header {
+  margin-bottom: clamp(38px, 5vw, 72px);
+}
+
+.command-dashboard,
+.hub-grid,
+.audit-project-grid,
+.report-findings-layout,
+.dashboard-lower-grid,
+.dashboard-bottom-grid,
+.dashboard-command-grid,
+.command-metrics {
+  gap: clamp(28px, 3vw, 52px);
+}
+
+.command-metric-card {
+  min-height: 96px;
+  padding: 12px 16px;
+}
+
+.live-audit-card,
+.command-panel,
+.agent-context-strip,
+.hub-card,
+.audit-project-card,
+.report-section,
+.issue-preview-panel,
+.product-context-panel {
+  padding: 18px;
+}
+
+.finding-mini-row,
+.export-mini-row,
+.audit-table-row,
+.agent-row,
+.quick-actions-card a,
+.quick-actions-card button,
+.quick-action-disabled,
+.evidence-thumb {
+  min-height: auto;
+  padding: 9px 0;
+}
+
+.evidence-thumb {
+  min-height: 92px;
+}
+
+.agent-row {
+  grid-template-columns: auto auto minmax(70px, 0.7fr) minmax(0, 1fr) auto;
+}
+
+.new-test-button,
+.cta-button,
+.button {
+  background: linear-gradient(135deg, rgba(139, 61, 255, 0.92), rgba(167, 66, 255, 0.9)) !important;
+  border: 0 !important;
+}
+
+.ghost-button,
+.sidebar-audit-cta a,
+.panel-link,
+.internal-link,
+.quick-actions-card a,
+.quick-actions-card button {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+.app-main h1,
+.audit-status-page h1,
+.command-dashboard-header h1,
+.page-header h1 {
+  font-weight: 600;
+}
+
+.app-main h2,
+.app-main h3,
+.app-main strong,
+.app-main b,
+.app-nav a,
+.metric-copy strong,
+.finding-mini-row strong,
+.export-mini-row strong,
+.audit-table-row strong,
+.agent-row strong,
+.evidence-thumb strong,
+.quick-actions-card a,
+.quick-actions-card button,
+.new-test-button,
+.cta-button,
+.button {
+  font-weight: 500 !important;
+}
+
+.eyebrow,
+.severity-pill,
+.finding-severity-badge,
+.report-agent-badge,
+.modal-steps span {
+  font-weight: 500 !important;
+}
+
+@media (max-width: 620px) {
+  .app-main {
+    padding: 20px;
+  }
+
+  .command-dashboard,
+  .hub-grid,
+  .audit-project-grid,
+  .report-findings-layout,
+  .dashboard-lower-grid,
+  .dashboard-bottom-grid,
+  .dashboard-command-grid,
+  .command-metrics {
+    gap: 22px;
+  }
+
+  .live-audit-card,
+  .command-panel,
+  .agent-context-strip,
+  .hub-card,
+  .audit-project-card,
+  .report-section,
+  .issue-preview-panel,
+  .product-context-panel {
+    padding: 14px 0;
+  }
+}
