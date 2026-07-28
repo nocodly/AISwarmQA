@@ -5748,3 +5748,134 @@ a.ghost-button:hover {
     gap: 18px;
   }
 }
+
+/* Phase 10 spacing pass: keep app controls readable after removing card chrome. */
+.app-main {
+  font-weight: 400;
+}
+
+.command-metric-card {
+  column-gap: 18px;
+  min-height: 142px;
+  padding: clamp(24px, 2.4vw, 34px);
+}
+
+.metric-copy {
+  gap: 6px;
+}
+
+.metric-copy strong {
+  font-size: 26px;
+  font-weight: 560;
+}
+
+.metric-copy small,
+.metric-copy em {
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.live-audit-card,
+.command-panel,
+.agent-context-strip,
+.hub-card,
+.audit-project-card,
+.report-section,
+.issue-preview-panel,
+.product-context-panel {
+  padding: clamp(28px, 2.6vw, 42px);
+}
+
+.finding-mini-row,
+.export-mini-row,
+.audit-table-row,
+.agent-row,
+.quick-actions-card a,
+.quick-actions-card button,
+.quick-action-disabled,
+.evidence-thumb {
+  gap: 14px;
+  min-height: 58px;
+  padding: 14px 16px;
+}
+
+.agent-row {
+  grid-template-columns: auto auto minmax(86px, 0.8fr) minmax(0, 1fr) auto;
+}
+
+.evidence-thumb {
+  min-height: 118px;
+  padding: 18px;
+}
+
+.severity-pill,
+.finding-severity-badge,
+.report-agent-badge {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  font-weight: 520 !important;
+  letter-spacing: 0;
+  padding: 0;
+  text-transform: none;
+}
+
+.quick-actions-card a,
+.quick-actions-card button,
+.new-test-button,
+.cta-button,
+.ghost-button,
+.button,
+.audit-action-buttons button,
+.selection-controls button,
+.export-preview-summary button,
+.panel-link,
+.internal-link,
+.sidebar-audit-cta a,
+.auth-tabs button {
+  font-weight: 520 !important;
+}
+
+.app-main strong,
+.app-main b,
+.finding-mini-row strong,
+.export-mini-row strong,
+.audit-table-row strong,
+.agent-row strong,
+.evidence-thumb strong,
+.panel-head h2,
+.live-audit-head h2 {
+  font-weight: 560 !important;
+}
+
+.eyebrow,
+.modal-steps span,
+.launch-review dt,
+.technical-details summary {
+  font-weight: 560 !important;
+}
+
+@media (max-width: 620px) {
+  .command-metric-card,
+  .live-audit-card,
+  .command-panel,
+  .agent-context-strip,
+  .hub-card,
+  .audit-project-card,
+  .report-section,
+  .issue-preview-panel,
+  .product-context-panel {
+    padding: 22px;
+  }
+
+  .finding-mini-row,
+  .export-mini-row,
+  .audit-table-row,
+  .agent-row,
+  .quick-actions-card a,
+  .quick-actions-card button,
+  .quick-action-disabled,
+  .evidence-thumb {
+    padding: 13px;
+  }
+}
