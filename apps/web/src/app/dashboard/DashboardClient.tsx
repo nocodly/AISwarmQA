@@ -178,6 +178,7 @@ export function DashboardClient() {
   const activeAudit = activeAudits[0] ?? null;
   const totalFindings = useMemo(() => Object.values(data?.severityCounts ?? {}).reduce((sum, count) => sum + count, 0), [data]);
   const criticalCount = data?.severityCounts.critical ?? 0;
+  const requiresSignIn = error?.toLowerCase().includes("sign in") ?? false;
   const filteredAudits = useMemo(() => {
     const audits = dashboard?.recentAudits ?? [];
     const normalized = query.trim().toLowerCase();
@@ -223,10 +224,9 @@ export function DashboardClient() {
           <AlertCircle aria-hidden="true" size={18} />
           <div>
             <strong>{error}</strong>
-            <p>Refresh the dashboard or sign in again if your session expired.</p>
+            <p>{requiresSignIn ? "Sign in to load workspace audits, findings, evidence, and GitHub status." : "Refresh the dashboard or sign in again if your session expired."}</p>
           </div>
-          <button onClick={load} type="button">Try again</button>
-          {error.toLowerCase().includes("sign in") ? <Link href="/auth">Sign in</Link> : null}
+          {requiresSignIn ? <Link href="/auth">Sign in</Link> : <button onClick={load} type="button">Try again</button>}
         </section>
       ) : null}
 

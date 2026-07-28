@@ -111,6 +111,7 @@ function useDashboardData() {
 }
 
 function WorkspaceState({ error, loading, onReload }: { error: string | null; loading: boolean; onReload: () => void }) {
+  const requiresSignIn = error?.toLowerCase().includes("sign in") ?? false;
   if (loading) {
     return <section className="command-panel"><p className="eyebrow">Loading</p><h2>Loading workspace data...</h2></section>;
   }
@@ -120,8 +121,12 @@ function WorkspaceState({ error, loading, onReload }: { error: string | null; lo
         <p className="eyebrow">Action needed</p>
         <h2>{error}</h2>
         <div className="hero-actions">
-          <button className="new-test-button" onClick={onReload} type="button"><RefreshCw aria-hidden="true" size={16} /> Try again</button>
-          <Link className="ghost-button compact" href="/auth">Sign in</Link>
+          {requiresSignIn ? (
+            <Link className="new-test-button" href="/auth">Sign in</Link>
+          ) : (
+            <button className="new-test-button" onClick={onReload} type="button"><RefreshCw aria-hidden="true" size={16} /> Try again</button>
+          )}
+          {!requiresSignIn ? <Link className="ghost-button compact" href="/auth">Sign in</Link> : null}
         </div>
       </section>
     );
