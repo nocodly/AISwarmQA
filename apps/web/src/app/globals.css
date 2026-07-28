@@ -2317,7 +2317,7 @@ a.ghost-button:hover {
 
 .app-main {
   min-width: 0;
-  padding: 34px;
+  padding: clamp(36px, 4.8vw, 64px);
   position: relative;
 }
 
@@ -3500,9 +3500,9 @@ a.ghost-button:hover {
 }
 
 .new-test-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #b6ff00, #35d9ff);
-  box-shadow: 0 0 26px rgba(53, 217, 255, 0.24);
-  color: #071006;
+  background: linear-gradient(135deg, #7c3aed, #ff2e93);
+  box-shadow: 0 0 28px rgba(255, 46, 147, 0.24), 0 0 18px rgba(139, 61, 255, 0.22);
+  color: #ffffff;
   transform: translateY(-1px);
 }
 
@@ -3887,7 +3887,7 @@ a.ghost-button:hover {
 .command-dashboard-header,
 .command-dashboard {
   margin: 0 auto;
-  max-width: 1480px;
+  max-width: 1440px;
   position: relative;
   z-index: 1;
 }
@@ -3895,9 +3895,9 @@ a.ghost-button:hover {
 .command-dashboard-header {
   align-items: center;
   display: grid;
-  gap: 18px;
+  gap: 24px;
   grid-template-columns: minmax(280px, 1fr) auto;
-  margin-bottom: 18px;
+  margin-bottom: 30px;
 }
 
 .command-dashboard-header h1 {
@@ -3985,12 +3985,12 @@ a.ghost-button:hover {
 
 .command-dashboard {
   display: grid;
-  gap: 14px;
+  gap: 24px;
 }
 
 .command-metrics {
   display: grid;
-  gap: 12px;
+  gap: 18px;
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
@@ -3999,10 +3999,10 @@ a.ghost-button:hover {
 .live-audit-card,
 .agent-context-strip {
   background:
-    linear-gradient(180deg, rgba(16, 23, 38, 0.92), rgba(9, 14, 25, 0.88));
-  border: 1px solid rgba(52, 64, 90, 0.62);
+    linear-gradient(180deg, rgba(14, 20, 34, 0.74), rgba(8, 12, 22, 0.54));
+  border: 1px solid rgba(73, 88, 120, 0.34);
   border-radius: 8px;
-  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
 }
 
 .command-metric-card {
@@ -4011,9 +4011,9 @@ a.ghost-button:hover {
   display: grid;
   gap: 10px;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  min-height: 112px;
+  min-height: 126px;
   overflow: hidden;
-  padding: 14px;
+  padding: 18px;
   position: relative;
 }
 
@@ -4069,32 +4069,32 @@ a.ghost-button:hover {
 
 .dashboard-command-grid {
   display: grid;
-  gap: 14px;
+  gap: 22px;
   grid-template-columns: minmax(520px, 1.22fr) minmax(300px, 0.72fr) minmax(300px, 0.72fr);
 }
 
 .dashboard-lower-grid {
   display: grid;
-  gap: 14px;
+  gap: 22px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .dashboard-bottom-grid {
   display: grid;
-  gap: 14px;
+  gap: 22px;
   grid-template-columns: minmax(480px, 1.2fr) minmax(300px, 0.62fr) minmax(300px, 0.78fr);
 }
 
 .live-audit-card,
 .command-panel,
 .agent-context-strip {
-  padding: 16px;
+  padding: 22px;
 }
 
 .live-audit-card {
   display: grid;
-  gap: 14px;
-  min-height: 310px;
+  gap: 18px;
+  min-height: 336px;
 }
 
 .live-audit-head,
@@ -4369,7 +4369,8 @@ a.ghost-button:hover {
 .audit-table-row:hover,
 .quick-actions-card a:hover,
 .quick-actions-card button:hover {
-  background: rgba(155, 92, 255, 0.13);
+  background: linear-gradient(135deg, rgba(139, 61, 255, 0.22), rgba(255, 46, 147, 0.12));
+  color: #ffffff;
 }
 
 .finding-mini-row strong,

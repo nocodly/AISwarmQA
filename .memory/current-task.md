@@ -9,11 +9,15 @@ Status: Design and workflow approval phase started on 2026-07-28. The current re
 - The authenticated app must feel like a premium AI QA command center: dark, technical, structured, data-rich, trustworthy, and alive.
 - The dashboard should be simple for customers: one obvious `New Audit` flow, clear recent work, live audit state, findings, evidence, GitHub exports, usage, and quick actions.
 - The user prefers a Railway-like product UX: clean sidebar, spacious operational canvas, actions visible where work happens, no confusing scattered pages.
+- The app should feel spacious and operational, not like many bordered boxes. Use fewer visible containers, more breathing room, clearer spacing, and softer panel treatment.
 - The dashboard reference includes: greeting, workspace selector, global search, notifications, profile menu, top metrics, live audit card, swarm activity, findings overview, recent findings, GitHub export queue, evidence gallery, recent audits, plan usage, quick actions, and Swarm Core illustration.
 - Before the findings list, include more explanatory text and context so customers understand what was tested, what agents did, why each issue matters, and what to do next.
 - Audit/finding pages must show real captured evidence only. Do not fake screenshots. If no screenshot exists, show a clear evidence-unavailable state and still show text evidence/replay metadata.
 - Dashboard and audit workflow must expose agent work clearly: which agents ran, what pages/actions they checked, what they found, and what is still missing.
 - All buttons, rows, cards, filters, menus, and sidebar links must have real actions or real destinations. Do not add dead controls or unsupported fake integrations.
+- Sidebar links must not point back to the public landing or to misleading dashboard anchors. If an app section is not implemented yet, omit it until it has a real page/workflow.
+- GitHub export actions should be added directly where customers review findings and reports, using recognizable GitHub styling and clear export state.
+- Before production, run a full app click-map audit across dashboard, audit report, projects, evidence, GitHub, billing, settings, auth, and public-to-app transitions.
 - Public landing can stay expressive; authenticated UI should reuse the neon identity in a calmer operational style.
 - Keep all UI copy in English even though the user discusses requirements in Ukrainian.
 

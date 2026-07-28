@@ -164,6 +164,12 @@ export function DashboardClient() {
     void load();
   }, []);
 
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("newAudit") === "1") {
+      setLauncherOpen(true);
+    }
+  }, []);
+
   const dashboard = data ?? (!loading ? emptyDashboard : null);
   const activeAudits = useMemo(() => data?.recentAudits.filter((audit) => runningStatuses.has(audit.status)) ?? [], [data]);
   const completedAudits = useMemo(() => data?.recentAudits.filter((audit) => completedStatuses.has(audit.status)) ?? [], [data]);
@@ -517,7 +523,7 @@ function QuickActionsCard({ sampleAuditId, onNewAudit }: { sampleAuditId: string
       ) : (
         <span className="quick-action-disabled"><BrandIcon name="evidence" tone="purple" /> Report appears after first completed audit</span>
       )}
-      <Link href="/settings"><Users aria-hidden="true" size={18} /> Invite team member <ChevronRight aria-hidden="true" size={16} /></Link>
+      <span className="quick-action-disabled"><Users aria-hidden="true" size={18} /> Team invite flow needs a dedicated screen</span>
       <Link href="/settings"><Settings aria-hidden="true" size={18} /> Workspace settings <ChevronRight aria-hidden="true" size={16} /></Link>
     </article>
   );
