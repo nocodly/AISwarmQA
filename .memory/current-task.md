@@ -36,14 +36,20 @@ Verification already completed:
 - API probe: PASS
 - Browser UI probe: PASS
 
+CI follow-up:
+
+- Commit `557febf` was pushed to `main`.
+- GitHub Actions run `30397267559` failed during `pnpm db:generate`.
+- Root cause: `packages/database/prisma.config.ts` imports `@ai-swarm-qa/config`, but a fresh CI checkout had not built `packages/config`, so Prisma could not resolve `@ai-swarm-qa/config/dist/index.js`.
+- Fix in progress: root `db:generate` and `db:migrate` scripts now build `@ai-swarm-qa/config` before invoking database Prisma commands.
+
 Next recommended actions:
 
-1. Review the current git diff.
-2. Commit the self-audit fixes with a clear message.
-3. Push to GitHub.
-4. Let CI run.
-5. If CI passes, deploy to Railway.
-6. Verify production health routes and the dashboard new audit modal.
-7. Continue the full app workflow pass: auth, dashboard navigation, new audit creation, audit detail page, findings detail, GitHub export, billing, settings, and evidence.
+1. Verify `pnpm db:generate` locally.
+2. Commit and push the CI fix.
+3. Let CI run again.
+4. If CI passes, deploy to Railway.
+5. Verify production health routes and the dashboard new audit modal.
+6. Continue the full app workflow pass: auth, dashboard navigation, new audit creation, audit detail page, findings detail, GitHub export, billing, settings, and evidence.
 
 Do not restart design work unless the owner asks for it. The immediate priority is functional completeness: every button and page should work correctly.
