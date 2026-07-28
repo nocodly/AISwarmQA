@@ -1,12 +1,10 @@
-import type { Metadata } from "next";
-import { MarketingTopicPage } from "../../components/MarketingTopicPage";
-import { getMarketingPage } from "../../lib/marketing-pages";
-
-export const metadata: Metadata = {
-  title: "Evidence",
-  description: "Stable evidence routes, private storage, revocation, workspace authorization, and retention policies for QA findings."
-};
+import { EvidenceIndexClient } from "../../components/AppDataPages";
+import { AppShell } from "../../components/AppShell";
 
 export default function EvidencePage() {
-  return <MarketingTopicPage page={getMarketingPage("evidence")!} />;
+  return (
+    <AppShell>
+      <EvidenceIndexClient />
+    </AppShell>
+  );
 }

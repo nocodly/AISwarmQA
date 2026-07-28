@@ -7,6 +7,7 @@ Status: Design and workflow approval phase started on 2026-07-28. The current re
 ## Phase 10 Product Direction
 
 - The authenticated app must feel like a premium AI QA command center: dark, technical, structured, data-rich, trustworthy, and alive.
+- Current priority changed on 2026-07-28: pause visual design polish and make every main button/page functional first.
 - The dashboard should be simple for customers: one obvious `New Audit` flow, clear recent work, live audit state, findings, evidence, GitHub exports, usage, and quick actions.
 - The user prefers a Railway-like product UX: clean sidebar, spacious operational canvas, actions visible where work happens, no confusing scattered pages.
 - The app should feel spacious and operational, not like many bordered boxes. Use fewer visible containers, more breathing room, clearer spacing, and softer panel treatment.

@@ -6,8 +6,12 @@ import { BrandIcon } from "./BrandIcons";
 const appNav = [
   { group: "Main", href: "/dashboard", label: "Dashboard", icon: "browser", tone: "purple" },
   { group: "Main", href: "/projects", label: "Projects", icon: "evidence", tone: "cyan" },
+  { group: "Main", href: "/audits", label: "Audits", icon: "agent", tone: "lime" },
+  { group: "Main", href: "/findings", label: "Findings", icon: "bug", tone: "magenta" },
   { group: "Main", href: "/evidence", label: "Evidence", icon: "screenshot", tone: "cyan" },
   { group: "Main", href: "/github", label: "GitHub", icon: "github", tone: "lime" },
+  { group: "Main", href: "/agents", label: "Agents", icon: "interaction", tone: "cyan" },
+  { group: "Main", href: "/reports", label: "Reports", icon: "complete", tone: "orange" },
   { group: "Account", href: "/billing", label: "Billing", icon: "complete", tone: "orange" },
   { group: "Account", href: "/settings", label: "Settings", icon: "interaction", tone: "cyan" }
 ] as const;
