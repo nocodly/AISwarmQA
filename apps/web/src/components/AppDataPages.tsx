@@ -330,16 +330,18 @@ export function GitHubAppClient() {
     setLoading(true);
     setError(null);
     try {
-      const [statusResponse, repositoriesResponse] = await Promise.all([
-        fetch("/api/integrations/github/status", { cache: "no-store" }),
-        fetch("/api/integrations/github/repositories", { cache: "no-store" })
-      ]);
+      const statusResponse = await fetch("/api/integrations/github/status", { cache: "no-store" });
       const statusBody = await statusResponse.json();
-      const repositoriesBody = await repositoriesResponse.json();
       if (!statusResponse.ok) throw new Error(statusBody.error?.message ?? "GitHub status could not be loaded.");
-      if (!repositoriesResponse.ok) throw new Error(repositoriesBody.error?.message ?? "GitHub repositories could not be loaded.");
       setStatus(statusBody);
-      setRepositories(repositoriesBody.repositories ?? []);
+      if (statusBody.connected) {
+        const repositoriesResponse = await fetch("/api/integrations/github/repositories", { cache: "no-store" });
+        const repositoriesBody = await repositoriesResponse.json();
+        if (!repositoriesResponse.ok) throw new Error(repositoriesBody.error?.message ?? "GitHub repositories could not be loaded.");
+        setRepositories(repositoriesBody.repositories ?? []);
+      } else {
+        setRepositories([]);
+      }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "GitHub data could not be loaded.");
       setStatus(null);

@@ -5599,3 +5599,152 @@ a.ghost-button:hover {
     transition: none !important;
   }
 }
+
+/* Phase 10 functional polish: app pages should feel open, fast, and Railway-like. */
+.app-shell {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Arial, sans-serif;
+  font-weight: 450;
+}
+
+.app-main {
+  padding: clamp(42px, 5vw, 72px);
+}
+
+.app-main h1,
+.audit-status-page h1,
+.command-dashboard-header h1,
+.page-header h1 {
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.app-main h2,
+.app-main h3,
+.command-panel h2,
+.hub-card h2,
+.live-audit-head h2,
+.panel-head h2 {
+  font-weight: 620;
+  letter-spacing: 0;
+}
+
+.app-main strong,
+.app-main b,
+.app-nav a,
+.quick-actions-card a,
+.quick-actions-card button,
+.audit-table-row strong,
+.finding-mini-row strong,
+.export-mini-row strong,
+.agent-row strong {
+  font-weight: 600;
+}
+
+.command-dashboard,
+.hub-grid,
+.audit-project-grid,
+.report-findings-layout,
+.dashboard-lower-grid,
+.dashboard-bottom-grid,
+.dashboard-command-grid,
+.command-metrics {
+  gap: clamp(24px, 2.2vw, 36px);
+}
+
+.command-metric-card,
+.command-panel,
+.live-audit-card,
+.agent-context-strip,
+.hub-card,
+.audit-project-card,
+.report-section,
+.issue-preview-panel,
+.finding-feed-card,
+.product-context-panel,
+.audit-export-strip,
+.report-status-strip,
+.agent-activity-card,
+.dashboard-error,
+.settings-panel,
+.billing-card {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.command-metric-card,
+.command-panel,
+.live-audit-card,
+.agent-context-strip,
+.hub-card,
+.audit-project-card,
+.report-section,
+.issue-preview-panel,
+.finding-feed-card,
+.product-context-panel {
+  padding: clamp(18px, 2vw, 28px);
+}
+
+.finding-mini-row,
+.export-mini-row,
+.audit-table-row,
+.agent-row,
+.quick-actions-card a,
+.quick-actions-card button,
+.quick-action-disabled,
+.evidence-thumb {
+  background: rgba(255, 255, 255, 0.025);
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.finding-mini-row:hover,
+.export-mini-row:hover,
+.audit-table-row:hover,
+.agent-row:hover,
+.quick-actions-card a:hover,
+.quick-actions-card button:hover,
+.evidence-thumb:hover {
+  background: rgba(139, 61, 255, 0.12);
+}
+
+.profile-chip,
+.workspace-switcher,
+.icon-command-button,
+.command-search,
+.app-nav a,
+.sidebar-audit-cta {
+  background: rgba(255, 255, 255, 0.025);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.eyebrow,
+.severity-pill,
+.finding-severity-badge,
+.report-agent-badge,
+.modal-steps span {
+  font-weight: 650;
+}
+
+.brand-icon,
+.github-logo {
+  filter: none;
+}
+
+@media (max-width: 620px) {
+  .app-main {
+    padding: 22px;
+  }
+
+  .command-dashboard,
+  .hub-grid,
+  .audit-project-grid,
+  .report-findings-layout,
+  .dashboard-lower-grid,
+  .dashboard-bottom-grid,
+  .dashboard-command-grid,
+  .command-metrics {
+    gap: 18px;
+  }
+}
