@@ -673,9 +673,15 @@ export function AuditDetails({ auditId }: { auditId: string }) {
           {!isTerminal ? <button type="button" onClick={() => void cancelAudit()} disabled={canceling}>
             {canceling ? "Cancelling" : "Cancel"}
           </button> : null}
-          <button className="github-export-button" type="button" onClick={() => setExportModalOpen(true)} disabled={selectedFindingIds.length === 0 || !githubStatus?.connected}>
-            <LinearIcon name="github" /> Export issues <span>{selectedFindingIds.length} selected</span>
-          </button>
+          {githubStatus?.connected ? (
+            <button className="github-export-button" type="button" onClick={() => setExportModalOpen(true)} disabled={selectedFindingIds.length === 0}>
+              <LinearIcon name="github" /> Export issues <span>{selectedFindingIds.length} selected</span>
+            </button>
+          ) : (
+            <a className="github-export-button" href="/github">
+              <LinearIcon name="github" /> Connect GitHub
+            </a>
+          )}
         </div>
       </section>
 
@@ -683,10 +689,11 @@ export function AuditDetails({ auditId }: { auditId: string }) {
         <div className="export-target">
           <LinearIcon name="github" />
           <div>
-            <strong>{selectedRepository ? selectedRepository.fullName : githubStatus?.connected ? "Choose a GitHub repository" : "GitHub export"}</strong>
-            <p>{githubMessage ?? "Choose findings, then export them to a connected GitHub repository."}</p>
+            <strong>{selectedRepository ? selectedRepository.fullName : githubStatus?.connected ? "Choose a GitHub repository" : "GitHub not connected"}</strong>
+            <p>{githubMessage ?? (githubStatus?.connected ? "Choose findings, then export them to a connected GitHub repository." : "Connect GitHub to export reviewed findings as repository issues.")}</p>
           </div>
         </div>
+        {!githubStatus?.connected ? <a className="panel-link" href="/github">Connect GitHub</a> : null}
         {cancelMessage ? <p className="export-message">{cancelMessage}</p> : null}
         {githubPreview ? (
           <div className="export-preview-summary">

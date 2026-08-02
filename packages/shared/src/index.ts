@@ -1761,6 +1761,79 @@ export function normalizeAuditUrl(input: string): string {
 
 export type UrlSafetyMode = "development" | "production";
 
+function normalizeAuditHostname(hostname: string): string {
+  return hostname.trim().toLowerCase().replace(/^\[/, "").replace(/\]$/, "").replace(/\.$/, "");
+}
+
+function ipv4ToNumber(value: string): number | null {
+  const parts = value.split(".");
+  if (parts.length !== 4) return null;
+
+  let result = 0;
+  for (const part of parts) {
+    if (!/^\d{1,3}$/.test(part)) return null;
+    const octet = Number(part);
+    if (!Number.isInteger(octet) || octet < 0 || octet > 255) return null;
+    result = result * 256 + octet;
+  }
+  return result >>> 0;
+}
+
+function isIpv4InRange(address: string, base: string, prefix: number): boolean {
+  const value = ipv4ToNumber(address);
+  const rangeBase = ipv4ToNumber(base);
+  if (value === null || rangeBase === null) return false;
+  const mask = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0;
+  return (value & mask) === (rangeBase & mask);
+}
+
+export function isForbiddenAuditHostname(hostname: string): boolean {
+  const host = normalizeAuditHostname(hostname);
+  if (!host) return true;
+  if (host === "localhost" || host.endsWith(".localhost") || host === "metadata.google.internal") return true;
+
+  const ipv4 = ipv4ToNumber(host);
+  if (ipv4 !== null) {
+    return [
+      ["0.0.0.0", 8],
+      ["10.0.0.0", 8],
+      ["100.64.0.0", 10],
+      ["127.0.0.0", 8],
+      ["169.254.0.0", 16],
+      ["172.16.0.0", 12],
+      ["192.0.0.0", 24],
+      ["192.0.2.0", 24],
+      ["192.168.0.0", 16],
+      ["198.18.0.0", 15],
+      ["198.51.100.0", 24],
+      ["203.0.113.0", 24],
+      ["224.0.0.0", 4],
+      ["240.0.0.0", 4]
+    ].some(([base, prefix]) => isIpv4InRange(host, base as string, prefix as number));
+  }
+
+  if (!host.includes(":")) return false;
+
+  const compactIpv6 = host.replace(/^0:0:0:0:0:0:0:1$/, "::1");
+  return (
+    compactIpv6 === "::" ||
+    compactIpv6 === "::1" ||
+    compactIpv6.startsWith("::ffff:127.") ||
+    compactIpv6.startsWith("::ffff:10.") ||
+    compactIpv6.startsWith("::ffff:172.16.") ||
+    compactIpv6.startsWith("::ffff:172.17.") ||
+    compactIpv6.startsWith("::ffff:172.18.") ||
+    compactIpv6.startsWith("::ffff:172.19.") ||
+    compactIpv6.startsWith("::ffff:172.2") ||
+    compactIpv6.startsWith("::ffff:172.30.") ||
+    compactIpv6.startsWith("::ffff:172.31.") ||
+    compactIpv6.startsWith("::ffff:192.168.") ||
+    compactIpv6.startsWith("fc") ||
+    compactIpv6.startsWith("fd") ||
+    compactIpv6.startsWith("fe80:")
+  );
+}
+
 export function assertAuditUrlAllowed(input: string, options: { mode: UrlSafetyMode; devAllowedHosts: string[] }): string {
   let normalized: string;
 
@@ -1776,15 +1849,13 @@ export function assertAuditUrlAllowed(input: string, options: { mode: UrlSafetyM
   }
 
   const host = url.port ? `${url.hostname}:${url.port}` : url.hostname;
-  const isLocalhost = ["localhost", "127.0.0.1", "::1"].includes(url.hostname);
-  const privatePatterns = [/^10\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[0-1])\./, /^169\.254\./];
-  const isPrivate = privatePatterns.some((pattern) => pattern.test(url.hostname));
+  const isLocalhost = ["localhost", "127.0.0.1", "::1"].includes(normalizeAuditHostname(url.hostname));
 
   if (options.mode === "development" && isLocalhost && options.devAllowedHosts.includes(host)) {
     return normalized;
   }
 
-  if (isLocalhost || isPrivate || url.hostname === "metadata.google.internal" || url.hostname === "169.254.169.254") {
+  if (isForbiddenAuditHostname(url.hostname)) {
     throw new Error("FORBIDDEN_TARGET");
   }
 

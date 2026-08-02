@@ -94,22 +94,29 @@ export function SettingsClient() {
 
   async function load() {
     setLoading(true);
-    const [settingsResponse, billingResponse] = await Promise.all([
-      fetch("/api/settings/workspace", { cache: "no-store" }),
-      fetch("/api/billing/summary", { cache: "no-store" })
-    ]);
-    const settingsBody = await settingsResponse.json();
-    const billingBody = await billingResponse.json();
-    setSettings(settingsResponse.ok ? settingsBody : null);
-    setBilling(billingResponse.ok ? billingBody : null);
-    if (!settingsResponse.ok) {
-      setMessage(settingsBody.error?.message ?? "Settings could not be loaded.");
-    } else if (!billingResponse.ok) {
-      setMessage(billingBody.error?.message ?? "Billing state could not be loaded.");
-    } else {
-      setMessage(null);
+    try {
+      const [settingsResponse, billingResponse] = await Promise.all([
+        fetch("/api/settings/workspace", { cache: "no-store" }),
+        fetch("/api/billing/summary", { cache: "no-store" })
+      ]);
+      const settingsBody = await settingsResponse.json();
+      const billingBody = await billingResponse.json();
+      setSettings(settingsResponse.ok ? settingsBody : null);
+      setBilling(billingResponse.ok ? billingBody : null);
+      if (!settingsResponse.ok) {
+        setMessage(settingsBody.error?.message ?? "Settings could not be loaded.");
+      } else if (!billingResponse.ok) {
+        setMessage(billingBody.error?.message ?? "Billing state could not be loaded.");
+      } else {
+        setMessage(null);
+      }
+    } catch {
+      setSettings(null);
+      setBilling(null);
+      setMessage("Settings could not be loaded. Check your connection and try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   async function invite() {

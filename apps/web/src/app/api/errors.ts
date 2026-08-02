@@ -29,6 +29,18 @@ export function jsonErrorFromUnknown(error: unknown) {
     if (error.message === "FORBIDDEN_TARGET") {
       return jsonError("FORBIDDEN_TARGET", "This target is not allowed for audits in the current environment.", 403);
     }
+
+    if (error.message === "TARGET_RESOLUTION_FAILED") {
+      return jsonError("TARGET_RESOLUTION_FAILED", "The audit target hostname could not be resolved.", 400);
+    }
+
+    if (error.message === "TARGET_RESOLUTION_TIMEOUT") {
+      return jsonError("TARGET_RESOLUTION_TIMEOUT", "The audit target hostname lookup timed out. Please try again.", 408);
+    }
+
+    if (error.message === "AUDIT_QUEUE_UNAVAILABLE") {
+      return jsonError("AUDIT_QUEUE_UNAVAILABLE", "Audit planning could not be queued. Please try again in a moment.", 503);
+    }
   }
 
   return jsonError("INTERNAL_ERROR", "Something went wrong while handling the audit request.", 500);

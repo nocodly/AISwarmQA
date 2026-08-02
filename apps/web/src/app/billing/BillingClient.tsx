@@ -41,11 +41,17 @@ export function BillingClient() {
 
   async function load() {
     setLoading(true);
-    const response = await fetch("/api/billing/summary", { cache: "no-store" });
-    const body = await response.json();
-    setState(response.ok ? body : null);
-    setMessage(response.ok ? null : body.error?.message ?? "Billing state could not be loaded.");
-    setLoading(false);
+    try {
+      const response = await fetch("/api/billing/summary", { cache: "no-store" });
+      const body = await response.json();
+      setState(response.ok ? body : null);
+      setMessage(response.ok ? null : body.error?.message ?? "Billing state could not be loaded.");
+    } catch {
+      setState(null);
+      setMessage("Billing state could not be loaded. Check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function startCheckout(interval: "monthly" | "yearly") {

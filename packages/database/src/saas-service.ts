@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { type CommercialPlan, type CommercialPlanId, getCommercialPlan, readCommercialPlans } from "@ai-swarm-qa/config";
-import { Prisma } from "@prisma/client";
+import { AuditStatus, Prisma } from "@prisma/client";
 import { prisma } from "./client";
 import { DomainError } from "./audit-service";
 
@@ -33,7 +33,13 @@ const rolePermissions: Record<WorkspaceRole, WorkspacePermission[]> = {
 };
 
 const activeSubscriptionStatuses = new Set(["TRIALING", "ACTIVE"]);
+const activeAuditStatuses: AuditStatus[] = ["CREATED", "VALIDATING", "QUEUED", "PLANNING", "RUNNING", "ANALYZING", "GENERATING_REPORT"];
+const staleActiveAuditWindowMs = 12 * 60 * 60 * 1000;
 const billingPeriodMs = 30 * 24 * 60 * 60 * 1000;
+
+function activeAuditCutoff() {
+  return new Date(Date.now() - staleActiveAuditWindowMs);
+}
 
 function toPlanId(plan: string | null | undefined): CommercialPlanId {
   const normalized = (plan ?? "FREE").toLowerCase();
@@ -144,7 +150,8 @@ export async function getWorkspaceUsageSummary(workspaceId: string, userId?: str
       prisma.audit.count({
         where: {
           project: { organizationId: workspaceId },
-          status: { in: ["CREATED", "VALIDATING", "QUEUED", "PLANNING", "RUNNING", "ANALYZING", "GENERATING_REPORT"] }
+          status: { in: activeAuditStatuses },
+          updatedAt: { gte: activeAuditCutoff() }
         }
       }),
       userId ? prisma.organizationMember.count({ where: { userId } }) : Promise.resolve(1),
@@ -487,7 +494,7 @@ export async function updateWorkspaceName(input: { workspaceId: string; actorUse
 export async function requestWorkspaceDeletion(input: { workspaceId: string; actorUserId: string; confirmation: string }) {
   await assertWorkspacePermission({ workspaceId: input.workspaceId, userId: input.actorUserId, permission: "workspace:delete" });
   const running = await prisma.audit.count({
-    where: { project: { organizationId: input.workspaceId }, status: { in: ["CREATED", "VALIDATING", "QUEUED", "PLANNING", "RUNNING", "ANALYZING", "GENERATING_REPORT"] } }
+    where: { project: { organizationId: input.workspaceId }, status: { in: activeAuditStatuses }, updatedAt: { gte: activeAuditCutoff() } }
   });
   const status = running > 0 ? "BLOCKED" : "REQUESTED";
   return prisma.workspaceDeletionRequest.create({

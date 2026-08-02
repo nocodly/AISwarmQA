@@ -1,4 +1,4 @@
-import { prisma } from "@ai-swarm-qa/database";
+import { assertWorkspacePermission, prisma } from "@ai-swarm-qa/database";
 import { readRuntimeConfig } from "@ai-swarm-qa/config";
 import { jsonErrorFromUnknown } from "../../errors";
 import { requireAuth } from "@/lib/auth";
@@ -9,6 +9,7 @@ export async function GET(request: Request) {
     const actor = await requireAuth(request);
     const config = readRuntimeConfig();
     await assertRateLimit(request, "data-export-workspace", config.rateLimitAuditCreateMax);
+    await assertWorkspacePermission({ workspaceId: actor.workspaceId, userId: actor.userId, permission: "members:manage" });
     const workspace = await prisma.organization.findUnique({
       where: { id: actor.workspaceId },
       include: {

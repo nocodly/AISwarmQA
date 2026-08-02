@@ -704,3 +704,44 @@ Railway worker watched-file trigger:
 - Added `apps/worker/package.json` script `railway:verify` to document and verify the worker build sequence from a watched worker path.
 - Verification:
   - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/worker railway:verify`: PASS.
+
+Business logic stabilization pass:
+
+- The owner asked to verify business logic first and noted that app design will be reworked later.
+- Fixed stale active-audit accounting:
+  - workspace concurrent audit usage now counts only active statuses updated within the active audit window.
+  - stale `planning`/active audits no longer permanently block Free plan audit creation.
+- Fixed audit creation queue failure behavior:
+  - `/api/audits` now times out queue enqueue attempts.
+  - usage creation is recorded only after the plan job is accepted by Redis.
+  - queue failure transitions the audit to `failed` and returns `AUDIT_QUEUE_UNAVAILABLE` instead of hanging.
+- Hardened audit target safety:
+  - shared URL safety now blocks additional private/reserved IPv4 and IPv6 ranges.
+  - web audit creation resolves target hostnames and blocks DNS aliases to private/reserved networks.
+  - worker planning and mission execution run the same DNS/network guard.
+  - Playwright request routing now aborts private/reserved network requests during audits, including redirect/resource requests.
+  - target-safety worker failures are terminal instead of being retried as transient mission failures.
+- Hardened account/workspace actions:
+  - workspace data export now requires `members:manage`.
+  - public signup now uses the shared rate-limit middleware before service-role account creation.
+- Hardened GitHub export idempotency:
+  - preparing a GitHub export batch no longer requeues findings that already have created GitHub issues.
+- Improved authenticated app error handling:
+  - Billing and Settings loaders now catch failed/non-JSON responses and leave the page in a recoverable error state.
+  - Audit detail now shows a direct `Connect GitHub` action when GitHub is disconnected.
+- Runtime verification:
+  - `POST /api/audits` with `http://169.254.169.254/latest/meta-data`: PASS, returned 403 `FORBIDDEN_TARGET`.
+  - `POST /api/audits` with an unresolvable hostname: PASS, returned 400 `TARGET_RESOLUTION_FAILED`.
+  - `POST /api/audits` with queue unavailable: PASS, returned 503 `AUDIT_QUEUE_UNAVAILABLE` in roughly 10 seconds and did not leave concurrent usage blocked.
+  - local app/API smoke returned 200 for `/dashboard`, `/audits`, `/findings`, `/github`, `/settings`, `/billing`, `/api/health`, `/api/health/database`, `/api/dashboard`, and `/api/integrations/github/status`.
+- Verification:
+  - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/shared typecheck`: PASS.
+  - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/web typecheck`: PASS.
+  - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/worker typecheck`: PASS.
+  - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/database typecheck`: PASS.
+  - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/web lint`: PASS.
+  - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/shared test`: PASS after Windows sandbox escalation.
+  - `corepack pnpm@10.0.0 lint`: PASS after Windows sandbox escalation.
+  - `corepack pnpm@10.0.0 test`: PASS after Windows sandbox escalation.
+  - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/web build`: PASS after Windows sandbox escalation.
+  - `git diff --check`: PASS, with only expected Windows CRLF warnings.

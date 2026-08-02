@@ -82,6 +82,7 @@ import {
   type PlannerOutput,
   type PlanningSnapshot
 } from "@ai-swarm-qa/shared";
+import { assertAuditTargetNetworkAllowed, installAuditNetworkGuard } from "./audit-target-safety";
 import { autonomousBrowserMission } from "./browser-agent";
 import { browserSwarmMission } from "./browser-swarm";
 
@@ -142,6 +143,10 @@ function safeFailureMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unknown worker failure.";
 }
 
+function isAuditTargetSafetyError(error: unknown) {
+  return error instanceof Error && ["FORBIDDEN_TARGET", "INVALID_URL", "TARGET_RESOLUTION_FAILED", "TARGET_RESOLUTION_TIMEOUT"].includes(error.message);
+}
+
 class AuditCancelledError extends Error {
   constructor(readonly reason: string) {
     super(reason);
@@ -174,7 +179,13 @@ async function gotoTarget(context: MissionContext) {
   return context.page.goto(context.targetUrl, {
     waitUntil: "networkidle",
     timeout: Math.min(context.definition.timeoutMs, 20000)
-  }).finally(() => context.checkCancellation());
+  }).finally(async () => {
+    await assertAuditTargetNetworkAllowed(context.page.url(), {
+      mode: process.env.NODE_ENV === "production" ? "production" : "development",
+      devAllowedHosts: config.auditDevAllowedHosts
+    });
+    await context.checkCancellation();
+  });
 }
 
 async function collectPlanningSnapshot(input: { targetUrl: string }): Promise<PlanningSnapshot> {
@@ -185,6 +196,10 @@ async function collectPlanningSnapshot(input: { targetUrl: string }): Promise<Pl
   try {
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    await installAuditNetworkGuard(context, {
+      mode: process.env.NODE_ENV === "production" ? "production" : "development",
+      devAllowedHosts: config.auditDevAllowedHosts
+    });
     const page = await context.newPage();
     page.on("console", (message) => {
       if (message.type() === "error") {
@@ -194,7 +209,15 @@ async function collectPlanningSnapshot(input: { targetUrl: string }): Promise<Pl
     page.on("requestfailed", () => {
       failedRequestCount += 1;
     });
+    await assertAuditTargetNetworkAllowed(input.targetUrl, {
+      mode: process.env.NODE_ENV === "production" ? "production" : "development",
+      devAllowedHosts: config.auditDevAllowedHosts
+    });
     await page.goto(input.targetUrl, { waitUntil: "networkidle", timeout: Math.min(config.plannerTimeoutMs, 20000) });
+    await assertAuditTargetNetworkAllowed(page.url(), {
+      mode: process.env.NODE_ENV === "production" ? "production" : "development",
+      devAllowedHosts: config.auditDevAllowedHosts
+    });
     const raw = (await page.evaluate(String.raw`(() => {
       const text = (value) => (value || "").replace(/\s+/g, " ").trim();
       const labelFor = (element) => {
@@ -730,6 +753,15 @@ async function runPlanningJob(job: Job<AuditQueueJob>) {
   const payload = planAuditJobSchema.parse(job.data);
   const missionContext = sanitizeAuditMissionContext(payload.missionContext);
   const startedAt = Date.now();
+  try {
+    await assertAuditTargetNetworkAllowed(payload.targetUrl, {
+      mode: process.env.NODE_ENV === "production" ? "production" : "development",
+      devAllowedHosts: config.auditDevAllowedHosts
+    });
+  } catch (error) {
+    await transitionAuditStatus(payload.auditId, "failed", { failureReason: safeFailureMessage(error) }).catch(() => undefined);
+    throw error;
+  }
   const baseline = planAuditMissions({
     auditId: payload.auditId,
     targetUrl: payload.targetUrl,
@@ -763,6 +795,10 @@ async function runPlanningJob(job: Job<AuditQueueJob>) {
       forms: snapshot.forms.length
     });
   } catch (error) {
+    if (isAuditTargetSafetyError(error)) {
+      await transitionAuditStatus(payload.auditId, "failed", { failureReason: safeFailureMessage(error) }).catch(() => undefined);
+      throw error;
+    }
     warnings.push("Planning snapshot could not be collected; deterministic baseline was used.");
     fallbackReason = "UNKNOWN_PROVIDER_ERROR";
     logError("planning_snapshot_failed", { auditId: payload.auditId, error: safeFailureMessage(error) });
@@ -937,12 +973,20 @@ async function runMissionJob(job: Job<ExecuteMissionJob>) {
   try {
     await getAuditSummary(payload.auditId);
     await throwIfAuditCancelled(payload.auditId);
+    await assertAuditTargetNetworkAllowed(payload.targetUrl, {
+      mode: process.env.NODE_ENV === "production" ? "production" : "development",
+      devAllowedHosts: config.auditDevAllowedHosts
+    });
     await transitionAuditStatus(payload.auditId, "running");
     await markMissionRunning(payload.missionId);
     await throwIfAuditCancelled(payload.auditId);
 
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext({ viewport: definition.viewport });
+    await installAuditNetworkGuard(context, {
+      mode: process.env.NODE_ENV === "production" ? "production" : "development",
+      devAllowedHosts: config.auditDevAllowedHosts
+    });
     const page = await context.newPage();
     const artifactDir = join(config.auditArtifactsDir, payload.auditId, payload.missionId);
     await mkdir(artifactDir, { recursive: true });
@@ -972,6 +1016,10 @@ async function runMissionJob(job: Job<ExecuteMissionJob>) {
     );
     await throwIfAuditCancelled(payload.auditId);
     finalUrl = page.url();
+    await assertAuditTargetNetworkAllowed(finalUrl, {
+      mode: process.env.NODE_ENV === "production" ? "production" : "development",
+      devAllowedHosts: config.auditDevAllowedHosts
+    });
     await persistFindings(payload.auditId, dedupeByFingerprint(result.findings));
     await uploadAuditEvidence(payload.auditId);
     await completeBrowserSessionWithDuration({ browserSessionId, finalUrl, browserDurationMs: Date.now() - startedAt });
@@ -1026,7 +1074,7 @@ async function runMissionJob(job: Job<ExecuteMissionJob>) {
       return { auditId: payload.auditId, missionId: payload.missionId, status: "cancelled" };
     }
     const failureReason = safeFailureMessage(error);
-    const finalAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? definition.maxAttempts);
+    const finalAttempt = isAuditTargetSafetyError(error) || job.attemptsMade + 1 >= (job.opts.attempts ?? definition.maxAttempts);
     logError("mission_failed", {
       auditId: payload.auditId,
       missionId: payload.missionId,

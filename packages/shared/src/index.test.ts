@@ -23,6 +23,7 @@ import {
   dedupeByFingerprint,
   executeMissionJobSchema,
   hasSwarmBudgetRemaining,
+  isForbiddenAuditHostname,
   mergePlannerOutput,
   plannerOutputSchema,
   isSafeInteractionLabel,
@@ -117,6 +118,19 @@ describe("shared contracts", () => {
         devAllowedHosts: ["127.0.0.1:4100"]
       })
     ).toThrow("FORBIDDEN_TARGET");
+  });
+
+  it("classifies private and reserved hostnames for audit network checks", () => {
+    expect(isForbiddenAuditHostname("localhost")).toBe(true);
+    expect(isForbiddenAuditHostname("10.1.2.3")).toBe(true);
+    expect(isForbiddenAuditHostname("172.20.0.10")).toBe(true);
+    expect(isForbiddenAuditHostname("192.168.1.5")).toBe(true);
+    expect(isForbiddenAuditHostname("169.254.169.254")).toBe(true);
+    expect(isForbiddenAuditHostname("metadata.google.internal")).toBe(true);
+    expect(isForbiddenAuditHostname("::1")).toBe(true);
+    expect(isForbiddenAuditHostname("fc00::1")).toBe(true);
+    expect(isForbiddenAuditHostname("example.com")).toBe(false);
+    expect(isForbiddenAuditHostname("8.8.8.8")).toBe(false);
   });
 
   it("prevents invalid audit status transitions", () => {

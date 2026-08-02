@@ -363,19 +363,38 @@ export async function createGitHubExportBatch(input: {
       if (!idempotencyKey) {
         throw new DomainError("IDEMPOTENCY_KEY_MISSING", "Missing GitHub export idempotency key.", "Export could not be prepared.");
       }
-      await tx.findingGitHubExport.upsert({
+      const existingExport = await tx.findingGitHubExport.findUnique({
         where: { idempotencyKey },
-        create: {
-          batchId: batch.id,
-          auditId: audit.id,
-          findingId: finding.id,
-          githubConnectionId: repository.githubConnectionId,
-          repositoryId: repository.id,
-          idempotencyKey,
-          createdByUserId: user.id,
-          status: "QUEUED"
-        },
-        update: {
+        select: { id: true, status: true, githubIssueUrl: true }
+      });
+
+      if (!existingExport) {
+        await tx.findingGitHubExport.create({
+          data: {
+            batchId: batch.id,
+            auditId: audit.id,
+            findingId: finding.id,
+            githubConnectionId: repository.githubConnectionId,
+            repositoryId: repository.id,
+            idempotencyKey,
+            createdByUserId: user.id,
+            status: "QUEUED"
+          }
+        });
+        continue;
+      }
+
+      if (existingExport.status === "CREATED" && existingExport.githubIssueUrl) {
+        await tx.findingGitHubExport.update({
+          where: { id: existingExport.id },
+          data: { batchId: batch.id }
+        });
+        continue;
+      }
+
+      await tx.findingGitHubExport.update({
+        where: { id: existingExport.id },
+        data: {
           batchId: batch.id,
           status: "QUEUED",
           errorCode: null,
