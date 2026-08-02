@@ -9,6 +9,7 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/index.ts",
     "lint": "tsc -p tsconfig.json --noEmit",
+    "railway:verify": "corepack pnpm@10.0.0 --filter @ai-swarm-qa/config build && corepack pnpm@10.0.0 --filter @ai-swarm-qa/database db:generate && corepack pnpm@10.0.0 --filter @ai-swarm-qa/worker build",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

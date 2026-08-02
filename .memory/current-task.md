@@ -696,3 +696,11 @@ Railway worker build-order fix:
   - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/database db:generate`: PASS.
   - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/worker build`: PASS.
   - `docker build -f Dockerfile.worker -t ai-swarm-qa-worker-build-check .`: PASS.
+
+Railway worker watched-file trigger:
+
+- Railway screenshots showed the web service correctly skipped `Fix worker Docker build order`, but the worker service still showed the failed `Add safe audit research context` deployment in history.
+- Because Railway services use watched files, `Dockerfile.worker` alone may not be enough to trigger the worker service depending on its watch-path configuration.
+- Added `apps/worker/package.json` script `railway:verify` to document and verify the worker build sequence from a watched worker path.
+- Verification:
+  - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/worker railway:verify`: PASS.
