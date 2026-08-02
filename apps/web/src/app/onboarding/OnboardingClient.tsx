@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowRight, GitBranch, Play } from "lucide-react";
 import { useState } from "react";
+import { LinearIcon } from "@/components/BrandIcons";
 
 export function OnboardingClient() {
   const [websiteUrl, setWebsiteUrl] = useState("");
@@ -67,13 +67,13 @@ export function OnboardingClient() {
           {message ? <p>{message}</p> : null}
           <div className="toolbar">
             <button className="button" onClick={startAudit} type="button">
-              <Play aria-hidden="true" size={18} /> Start audit
+              <LinearIcon name="add" /> Start audit
             </button>
             <button onClick={skipGitHub} type="button">
-              <GitBranch aria-hidden="true" size={16} /> Skip GitHub
+              Skip GitHub
             </button>
             <a className="button" href="/billing">
-              Upgrade when needed <ArrowRight aria-hidden="true" size={18} />
+              Upgrade when needed
             </a>
           </div>
         </div>

@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { AlertCircle, CheckCircle2, LockKeyhole, Mail, UserRound } from "lucide-react";
 import { createClient, type Session, type SupabaseClient } from "@supabase/supabase-js";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { LinearIcon } from "@/components/BrandIcons";
 
 type AuthConfig = {
   configured: boolean;
@@ -11,8 +11,6 @@ type AuthConfig = {
   supabaseUrl: string | null;
   supabasePublishableKey: string | null;
 };
-
-const authCookieName = "sb-aiswarmqa-auth-token";
 
 export function AuthClient() {
   const [mode, setMode] = useState<"signup" | "signin">("signup");
@@ -50,11 +48,11 @@ export function AuthClient() {
       setClient(supabase);
 
       const current = await supabase.auth.getSession();
-      syncAuthCookie(current.data.session);
+      void syncAuthCookie(current.data.session);
       setSessionEmail(current.data.session?.user.email ?? null);
 
       const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-        syncAuthCookie(session);
+        void syncAuthCookie(session);
         setSessionEmail(session?.user.email ?? null);
       });
       return () => data.subscription.unsubscribe();
@@ -103,7 +101,7 @@ export function AuthClient() {
       return;
     }
 
-    syncAuthCookie(result.data.session);
+    await syncAuthCookie(result.data.session);
     if (result.data.session) {
       window.location.href = "/dashboard";
       return;
@@ -116,17 +114,12 @@ export function AuthClient() {
   async function signOut() {
     if (!client) return;
     await client.auth.signOut();
-    clearAuthCookie();
+    await clearAuthCookie();
     setSessionEmail(null);
   }
 
   return (
-    <section className="auth-page sketch-section">
-      <div className="qa-annotations auth-notes" aria-hidden="true">
-        <span className="qa-note marker-lime">session fixed</span>
-        <span className="qa-note marker-orange">secure cookie</span>
-        <span className="tiny-bug bug-one">ship after login</span>
-      </div>
+    <section className="auth-page">
       <div className="auth-card">
         <p className="marketing-eyebrow">Account access</p>
         <h1>{title}</h1>
@@ -134,7 +127,7 @@ export function AuthClient() {
 
         {sessionEmail ? (
           <div className="auth-session">
-            <CheckCircle2 aria-hidden="true" size={20} />
+            <LinearIcon name="issues" />
             <div>
               <strong>Signed in as {sessionEmail}</strong>
               <span>Your dashboard is ready.</span>
@@ -159,13 +152,13 @@ export function AuthClient() {
 
             {!configured ? (
               <div className="auth-alert error">
-                <AlertCircle aria-hidden="true" size={18} />
+                <LinearIcon name="issues" />
                 Supabase Auth is not configured for this deployment.
               </div>
             ) : null}
             {configured && mode === "signup" && !instantSignupConfigured ? (
               <div className="auth-alert error">
-                <AlertCircle aria-hidden="true" size={18} />
+                <LinearIcon name="issues" />
                 Instant signup is not configured for this deployment.
               </div>
             ) : null}
@@ -175,7 +168,7 @@ export function AuthClient() {
                 <label>
                   <span>Name</span>
                   <span className="auth-input">
-                    <UserRound aria-hidden="true" size={18} />
+                    <LinearIcon name="inbox" />
                     <input autoComplete="name" onChange={(event) => setName(event.target.value)} placeholder="Alex Founder" value={name} />
                   </span>
                 </label>
@@ -183,27 +176,27 @@ export function AuthClient() {
               <label>
                 <span>Email</span>
                 <span className="auth-input">
-                  <Mail aria-hidden="true" size={18} />
+                  <LinearIcon name="inbox" />
                   <input autoComplete="email" onChange={(event) => setEmail(event.target.value)} placeholder="you@company.com" required type="email" value={email} />
                 </span>
               </label>
               <label>
                 <span>Password</span>
                 <span className="auth-input">
-                  <LockKeyhole aria-hidden="true" size={18} />
+                  <LinearIcon name="inbox" />
                   <input autoComplete={mode === "signup" ? "new-password" : "current-password"} minLength={8} onChange={(event) => setPassword(event.target.value)} placeholder="8+ characters" required type="password" value={password} />
                 </span>
               </label>
 
               {error ? (
                 <div className="auth-alert error">
-                  <AlertCircle aria-hidden="true" size={18} />
+                  <LinearIcon name="issues" />
                   {error}
                 </div>
               ) : null}
               {message ? (
                 <div className="auth-alert success">
-                  <CheckCircle2 aria-hidden="true" size={18} />
+                  <LinearIcon name="issues" />
                   {message}
                 </div>
               ) : null}
@@ -219,24 +212,19 @@ export function AuthClient() {
   );
 }
 
-function syncAuthCookie(session: Session | null) {
+async function syncAuthCookie(session: Session | null) {
   if (!session?.access_token) {
-    clearAuthCookie();
+    await clearAuthCookie();
     return;
   }
 
-  const maxAge = Math.max(60, session.expires_at ? session.expires_at - Math.floor(Date.now() / 1000) : 60 * 60);
-  const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  const value = encodeURIComponent(
-    JSON.stringify({
-      access_token: session.access_token,
-      expires_at: session.expires_at
-    })
-  );
-  document.cookie = `${authCookieName}=${value}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}`;
+  await fetch("/api/auth/session", {
+    body: JSON.stringify({ accessToken: session.access_token, expiresAt: session.expires_at }),
+    headers: { "content-type": "application/json" },
+    method: "POST"
+  });
 }
 
-function clearAuthCookie() {
-  const secure = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${authCookieName}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
+async function clearAuthCookie() {
+  await fetch("/api/auth/session", { method: "DELETE" });
 }

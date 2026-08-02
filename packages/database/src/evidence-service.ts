@@ -85,11 +85,14 @@ export async function enableExternalEvidenceForFindings(input: { auditId: string
 }
 
 export async function getPublicEvidence(publicEvidenceId: string) {
+  const now = new Date();
   const evidence = await prisma.findingEvidence.findFirst({
     where: {
       publicEvidenceId,
       externalSharingEnabled: true,
       revokedAt: null,
+      deletedAt: null,
+      OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
       storageProvider: "supabase",
       storageBucket: { not: null },
       storagePath: { not: null }

@@ -57,7 +57,9 @@ export const auditRequestSchema = z.object({
       projectName: z.string().max(120).optional(),
       environment: z.enum(["production", "staging", "preview"]).optional(),
       accessMode: z.enum(["public", "temporary-account", "guided-instructions", "credentials-later"]).optional(),
-      auditScope: z.string().max(80).optional(),
+      auditScope: z.enum(["quick", "smoke", "full", "auth", "checkout", "accessibility", "mobile", "custom"]).optional(),
+      loginUrl: z.string().url().optional(),
+      testAccount: z.string().max(240).optional(),
       customInstructions: z.string().max(1600).optional(),
       safetyRules: z.array(z.string().max(120)).max(12).optional()
     })
@@ -66,6 +68,31 @@ export const auditRequestSchema = z.object({
 });
 
 export type AuditRequest = z.infer<typeof auditRequestSchema>;
+
+export const auditAccessModeSchema = z.enum(["public", "temporary-account", "guided-instructions", "credentials-later"]);
+export type AuditAccessMode = z.infer<typeof auditAccessModeSchema>;
+
+export const auditScopeSchema = z.enum(["quick", "smoke", "full", "auth", "checkout", "accessibility", "mobile", "custom"]);
+export type AuditScope = z.infer<typeof auditScopeSchema>;
+
+export const auditMissionContextSchema = z
+  .object({
+    accessMode: auditAccessModeSchema.default("public"),
+    auditScope: auditScopeSchema.default("full"),
+    loginUrl: z.string().url().optional(),
+    testAccount: z.string().max(240).optional(),
+    customInstructions: z.string().max(1600).optional(),
+    safetyRules: z.array(z.string().max(120)).max(12).default([])
+  })
+  .strict();
+
+export type AuditMissionContext = z.infer<typeof auditMissionContextSchema>;
+
+export const defaultAuditMissionContext = {
+  accessMode: "public",
+  auditScope: "full",
+  safetyRules: []
+} satisfies AuditMissionContext;
 
 export const githubExportFindingSelectionSchema = z.object({
   findingIds: z.array(z.string().min(1)).min(1).max(100),
@@ -109,7 +136,8 @@ export const auditJobSchema = z.object({
   missionId: z.string().min(1),
   missionType: z.string().min(1).optional(),
   targetUrl: z.string().url(),
-  correlationId: z.string().min(1)
+  correlationId: z.string().min(1),
+  missionContext: auditMissionContextSchema.default(defaultAuditMissionContext)
 });
 
 export type AuditJob = z.infer<typeof auditJobSchema>;
@@ -774,6 +802,7 @@ export function normalizeWhitespace(input: string): string {
 
 export function redactSensitiveText(input: string): string {
   return normalizeWhitespace(input)
+    .replace(/\b(password|passcode|secret|token|api[_ -]?key)\s*[:=]\s*\S+/gi, "$1: [REDACTED]")
     .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, redactedValue)
     .replace(/\b(?:\d[ -]*?){13,19}\b/g, redactedValue)
     .replace(/\b(?:bearer\s+)?[A-Za-z0-9_-]{24,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/gi, redactedValue)
@@ -799,6 +828,18 @@ export function sanitizeUrlForPlanning(input: string, baseUrl?: string): string 
   } catch {
     return null;
   }
+}
+
+export function sanitizeAuditMissionContext(input: Partial<AuditMissionContext> | null | undefined): AuditMissionContext {
+  const parsed = auditMissionContextSchema.parse(input ?? {});
+  return auditMissionContextSchema.parse({
+    accessMode: parsed.accessMode,
+    auditScope: parsed.auditScope,
+    ...(parsed.loginUrl ? { loginUrl: sanitizeUrlForPlanning(parsed.loginUrl) ?? undefined } : {}),
+    ...(parsed.testAccount ? { testAccount: truncateText(parsed.testAccount, 160) } : {}),
+    ...(parsed.customInstructions ? { customInstructions: truncateText(parsed.customInstructions, 1200) } : {}),
+    safetyRules: parsed.safetyRules.map((rule) => truncateText(rule, 120))
+  });
 }
 
 export function isSameOriginOrRelativeRoute(route: string, targetUrl: string): boolean {
@@ -1067,6 +1108,7 @@ export const plannerInputSchema = z.object({
   auditId: z.string().min(1),
   targetUrl: z.string().url(),
   auditMode: z.enum(["preview", "standard"]),
+  missionContext: auditMissionContextSchema,
   baselineMissions: z.array(
     z.object({
       type: missionTypeSchema,
@@ -1087,7 +1129,8 @@ export const plannerInputSchema = z.object({
     noDestructiveActions: z.literal(true),
     sameOriginOnly: z.literal(true),
     noPayments: z.literal(true),
-    noAccountCreation: z.literal(true)
+    noAccountCreation: z.literal(true),
+    noStoredPasswords: z.literal(true)
   })
 });
 
@@ -1134,7 +1177,8 @@ export const planAuditJobSchema = z.object({
   auditId: z.string().min(1),
   targetUrl: z.string().url(),
   correlationId: z.string().min(1),
-  auditMode: z.enum(["preview", "standard"]).default("standard")
+  auditMode: z.enum(["preview", "standard"]).default("standard"),
+  missionContext: auditMissionContextSchema.default(defaultAuditMissionContext)
 });
 
 export type PlanAuditJob = z.infer<typeof planAuditJobSchema>;
@@ -1147,6 +1191,7 @@ export type MissionPlanningMetadata = {
 
 export type MergedMissionDefinition = MissionDefinition & {
   planning: MissionPlanningMetadata;
+  missionContext: AuditMissionContext;
 };
 
 export type RejectedPlannerProposal = {
@@ -1174,15 +1219,18 @@ export function buildPlannerInput(input: {
   auditId: string;
   targetUrl: string;
   auditMode: "preview" | "standard";
+  missionContext?: AuditMissionContext;
   baselineMissions: MissionDefinition[];
   snapshot: PlanningSnapshot;
   maxProposedMissions: number;
   maxPriorityRoutes: number;
 }): PlannerInput {
+  const missionContext = sanitizeAuditMissionContext(input.missionContext);
   return plannerInputSchema.parse({
     auditId: input.auditId,
     targetUrl: input.targetUrl,
     auditMode: input.auditMode,
+    missionContext,
     baselineMissions: input.baselineMissions.map((mission) => ({
       type: mission.type,
       priority: mission.priority,
@@ -1200,7 +1248,7 @@ export function buildPlannerInput(input: {
       ],
       restrictions: [
         "same-origin only",
-        "no login",
+        missionContext.accessMode === "public" ? "no login" : "no stored passwords or secret handling",
         "no payment execution",
         "no account creation",
         "no generated selectors or code"
@@ -1212,7 +1260,8 @@ export function buildPlannerInput(input: {
       noDestructiveActions: true,
       sameOriginOnly: true,
       noPayments: true,
-      noAccountCreation: true
+      noAccountCreation: true,
+      noStoredPasswords: true
     }
   });
 }
@@ -1220,6 +1269,7 @@ export function buildPlannerInput(input: {
 export function mergePlannerOutput(input: {
   targetUrl: string;
   baselineMissions: MissionDefinition[];
+  missionContext?: AuditMissionContext;
   plannerOutput?: PlannerOutput | null;
   limits: PlannerPolicyLimits;
   allowedMissionTypes?: MissionType[];
@@ -1230,11 +1280,13 @@ export function mergePlannerOutput(input: {
   importantJourneys: PlannerOutput["importantJourneys"];
   warnings: string[];
 } {
+  const missionContext = sanitizeAuditMissionContext(input.missionContext);
   const missionMap = new Map<MissionType, MergedMissionDefinition>();
   for (const mission of input.baselineMissions) {
     missionMap.set(mission.type, {
       ...mission,
-      planning: { planningSource: "baseline", targetRoutes: ["/"] }
+      planning: { planningSource: "baseline", targetRoutes: ["/"] },
+      missionContext
     });
   }
 
@@ -1296,9 +1348,10 @@ export function mergePlannerOutput(input: {
         planningSource: missionMap.has(proposal.type) ? "ai-prioritized" : "ai-suggested",
         targetRoutes: targetRoutes.length > 0 ? targetRoutes : ["/"],
         aiReason: truncateText(proposal.reason, 300)
-      }
+      },
+      missionContext
     };
-    missionMap.set(proposal.type, missionDefinitionSchema.extend({ planning: z.any() }).parse(merged) as MergedMissionDefinition);
+    missionMap.set(proposal.type, missionDefinitionSchema.extend({ planning: z.any(), missionContext: auditMissionContextSchema }).parse(merged));
     acceptedProposals.push({
       ...proposal,
       targetRoutes: merged.planning.targetRoutes,
@@ -1400,7 +1453,8 @@ export const executeMissionJobSchema = z.object({
   missionId: z.string().min(1),
   missionType: missionTypeSchema,
   targetUrl: z.string().url(),
-  correlationId: z.string().min(1)
+  correlationId: z.string().min(1),
+  missionContext: auditMissionContextSchema.default(defaultAuditMissionContext)
 });
 
 export type ExecuteMissionJob = z.infer<typeof executeMissionJobSchema>;

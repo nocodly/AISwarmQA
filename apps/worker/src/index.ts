@@ -71,9 +71,11 @@ import {
   missionTypeSchema,
   planAuditJobSchema,
   planAuditMissions,
+  sanitizeAuditMissionContext,
   sanitizePlanningSnapshot,
   type ExecuteMissionJob,
   githubExportJobSchema,
+  type AuditMissionContext,
   type MissionDefinition,
   type MissionType,
   type PlannerFallbackReason,
@@ -117,6 +119,7 @@ type MissionContext = {
   missionId: string;
   missionType: MissionType;
   targetUrl: string;
+  missionContext: AuditMissionContext;
   definition: MissionDefinition;
   page: Page;
   browser: Browser;
@@ -725,6 +728,7 @@ const executors = {
 
 async function runPlanningJob(job: Job<AuditQueueJob>) {
   const payload = planAuditJobSchema.parse(job.data);
+  const missionContext = sanitizeAuditMissionContext(payload.missionContext);
   const startedAt = Date.now();
   const baseline = planAuditMissions({
     auditId: payload.auditId,
@@ -778,6 +782,7 @@ async function runPlanningJob(job: Job<AuditQueueJob>) {
         auditId: payload.auditId,
         targetUrl: payload.targetUrl,
         auditMode: payload.auditMode,
+        missionContext,
         baselineMissions: baseline,
         snapshot: aiSnapshot,
         maxProposedMissions: config.plannerMaxProposedMissions,
@@ -829,6 +834,7 @@ async function runPlanningJob(job: Job<AuditQueueJob>) {
   const merged = mergePlannerOutput({
     targetUrl: payload.targetUrl,
     baselineMissions: baseline,
+    missionContext,
     plannerOutput,
     limits: {
       maxProposedMissions: config.plannerMaxProposedMissions,
@@ -884,7 +890,8 @@ async function runPlanningJob(job: Job<AuditQueueJob>) {
         missionId: mission.id,
         missionType: missionTypeSchema.parse(mission.type),
         targetUrl: payload.targetUrl,
-        correlationId: payload.correlationId
+        correlationId: payload.correlationId,
+        missionContext
       });
     }
   } finally {
@@ -954,6 +961,7 @@ async function runMissionJob(job: Job<ExecuteMissionJob>) {
         missionId: payload.missionId,
         missionType: payload.missionType,
         targetUrl: payload.targetUrl,
+        missionContext: sanitizeAuditMissionContext(payload.missionContext),
         definition,
         page,
         browser,

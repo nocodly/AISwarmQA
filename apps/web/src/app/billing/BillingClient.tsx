@@ -1,7 +1,7 @@
 "use client";
 
-import { CreditCard, ExternalLink, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
+import { LinearIcon } from "@/components/BrandIcons";
 
 type BillingState = {
   plan: {
@@ -79,76 +79,69 @@ export function BillingClient() {
   }, []);
 
   return (
-    <>
-      <header className="page-header">
+    <div className="app-content-stack">
+      <header className="page-header app-page-header">
         <div>
           <div className="eyebrow">Billing</div>
           <h1>Plan and usage</h1>
+          <p>Review the current plan, usage, and billing actions.</p>
         </div>
-        <button onClick={load} type="button">
-          <RefreshCw aria-hidden="true" size={16} /> Refresh
+        <button className="ghost-button compact" onClick={load} type="button">
+          Refresh
         </button>
       </header>
 
-      {loading ? <section className="panel">Loading billing state.</section> : null}
+      {loading ? <section className="command-panel">Loading billing state.</section> : null}
       {message ? <p className="error-text">{message}</p> : null}
 
       {state ? (
         <>
-          <section className="grid">
-            <article className="card">
+          <section className="simple-stat-grid">
+            <article className="command-metric-card tone-purple">
               <h2>Current plan</h2>
               <div className="metric">{state.plan.name}</div>
               <p>{state.subscription.status} / {state.subscription.interval}</p>
-              <p>{state.subscription.currentPeriodEnd ? `Renews ${new Date(state.subscription.currentPeriodEnd).toLocaleDateString()}` : "No renewal date"}</p>
             </article>
-            <article className="card">
+            <article className="command-metric-card tone-cyan">
               <h2>Usage</h2>
               <div className="metric">
                 {state.usage.audits}/{state.limits.auditsPerMonth ?? "Custom"}
               </div>
               <p>Audits this period</p>
             </article>
-            <article className="card">
+            <article className="command-metric-card tone-lime">
               <h2>Evidence</h2>
               <div className="metric">{state.limits.evidenceRetentionDays}d</div>
               <p>Retention policy</p>
             </article>
           </section>
 
-          <section className="panel" style={{ marginTop: 16 }}>
-            <h2>Limits</h2>
-            <ul className="status-list">
-              <li><span>Pages per audit</span><span>{state.limits.maxPagesPerAudit ?? "Custom"}</span></li>
-              <li><span>Concurrent audits</span><span>{state.usage.concurrentAudits}/{state.limits.concurrentAudits ?? "Custom"}</span></li>
-              <li><span>Workspaces</span><span>{state.usage.workspaces}/{state.limits.workspaceLimit ?? "Custom"}</span></li>
-              <li><span>Team members</span><span>{state.usage.teamMembers}/{state.limits.teamMemberLimit ?? "Custom"}</span></li>
-              <li><span>Email reports</span><span>{state.plan.emailReports ? "enabled" : "not included"}</span></li>
-              <li><span>Team invitations</span><span>{state.plan.teamInvitationsEnabled ? "enabled" : "not included"}</span></li>
-            </ul>
-          </section>
-
-          <section className="panel" style={{ marginTop: 16 }}>
-            <h2>Actions</h2>
+          <section className="command-panel app-section-gap">
+            <div className="panel-head"><div><p className="eyebrow">Billing actions</p><h2>Manage plan</h2></div></div>
             <div className="toolbar">
-              <button className="button" onClick={() => startCheckout("monthly")} type="button">
-                <CreditCard aria-hidden="true" size={18} /> Upgrade monthly
+              <button className="new-test-button" onClick={() => startCheckout("monthly")} type="button">
+                <LinearIcon name="add" /> Upgrade monthly
               </button>
-              <button className="button" onClick={() => startCheckout("yearly")} type="button">
-                <CreditCard aria-hidden="true" size={18} /> Upgrade yearly
+              <button className="ghost-button compact" onClick={() => startCheckout("yearly")} type="button">
+                Upgrade yearly
               </button>
-              <button onClick={openPortal} type="button">
-                <ExternalLink aria-hidden="true" size={16} /> Manage billing
+              <button className="ghost-button compact" onClick={openPortal} type="button">
+                Manage billing
               </button>
             </div>
           </section>
 
-          <section className="panel" style={{ marginTop: 16 }}>
-            <h2>Business</h2>
-            <p>Business plans are configured by sales and synchronized server-side before limits change.</p>
+          <section className="command-panel app-section-gap">
+            <div className="panel-head"><div><p className="eyebrow">Limits</p><h2>Included usage</h2></div></div>
+            <ul className="status-list">
+              <li><span>Pages per audit</span><span>{state.limits.maxPagesPerAudit ?? "Custom"}</span></li>
+              <li><span>Concurrent audits</span><span>{state.usage.concurrentAudits}/{state.limits.concurrentAudits ?? "Custom"}</span></li>
+              <li><span>Team members</span><span>{state.usage.teamMembers}/{state.limits.teamMemberLimit ?? "Custom"}</span></li>
+              <li><span>Email reports</span><span>{state.plan.emailReports ? "Enabled" : "Not included"}</span></li>
+            </ul>
           </section>
         </>
       ) : null}
-    </>
+    </div>
   );
 }

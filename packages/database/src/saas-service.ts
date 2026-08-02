@@ -259,7 +259,7 @@ export async function getAuditWorkspaceId(auditId: string) {
 }
 
 export async function getDashboardOverview(input: { workspaceId: string }) {
-  const [summary, recentAudits, severityGroups, recentFindings, githubExports, recentGitHubExports, recentEvidence] = await Promise.all([
+  const [summary, recentAudits, severityGroups, recentFindings, githubExports, recentGitHubExports, recentEvidence, githubConnection] = await Promise.all([
     getWorkspaceUsageSummary(input.workspaceId),
     prisma.audit.findMany({
       where: { project: { organizationId: input.workspaceId } },
@@ -307,8 +307,16 @@ export async function getDashboardOverview(input: { workspaceId: string }) {
           }
         }
       }
+    }),
+    prisma.gitHubConnection.findFirst({
+      where: { workspaceId: input.workspaceId, revokedAt: null },
+      orderBy: { updatedAt: "desc" },
+      include: { repositories: { orderBy: { fullName: "asc" } } }
     })
   ]);
+  const readyGitHubRepositories = githubConnection?.repositories.filter((repository) => repository.issuesEnabled && !repository.archived) ?? [];
+  const latestExportRepository = recentGitHubExports[0]?.repository.fullName ?? null;
+  const selectedGitHubRepository = latestExportRepository ?? readyGitHubRepositories[0]?.fullName ?? githubConnection?.repositories[0]?.fullName ?? null;
   const severityCounts = severityGroups.reduce<Record<string, number>>((counts, group) => {
     counts[group.severity.toLowerCase()] = group._count._all;
     return counts;
@@ -366,7 +374,14 @@ export async function getDashboardOverview(input: { workspaceId: string }) {
       externalSharingEnabled: evidence.externalSharingEnabled && !evidence.revokedAt,
       createdAt: evidence.createdAt.toISOString()
     })),
-    githubIssuesExported: githubExports
+    githubIssuesExported: githubExports,
+    githubConnection: {
+      connected: Boolean(githubConnection),
+      accountLogin: githubConnection?.githubLogin ?? null,
+      selectedRepository: selectedGitHubRepository,
+      repositoriesCount: githubConnection?.repositories.length ?? 0,
+      readyRepositoriesCount: readyGitHubRepositories.length
+    }
   };
 }
 

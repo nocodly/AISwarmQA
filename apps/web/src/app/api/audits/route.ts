@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { readRuntimeConfig } from "@ai-swarm-qa/config";
 import { assertCanCreateAudit, createAuditRecord, recordUsageEvent, transitionAuditStatus, updateOnboarding } from "@ai-swarm-qa/database";
 import { createAuditQueue, enqueueAuditPlan } from "@ai-swarm-qa/queue";
-import { assertAuditUrlAllowed, auditRequestSchema } from "@ai-swarm-qa/shared";
+import { assertAuditUrlAllowed, auditRequestSchema, sanitizeAuditMissionContext } from "@ai-swarm-qa/shared";
 import { jsonError, jsonErrorFromUnknown } from "../errors";
 import { requireAuth } from "@/lib/auth";
 import { assertRateLimit, rateLimitResponse } from "@/lib/rate-limit";
@@ -19,6 +19,14 @@ export async function POST(request: Request) {
     const targetUrl = assertAuditUrlAllowed(body.url, {
       mode: process.env.NODE_ENV === "production" ? "production" : "development",
       devAllowedHosts: config.auditDevAllowedHosts
+    });
+    const missionContext = sanitizeAuditMissionContext({
+      ...(body.metadata?.accessMode ? { accessMode: body.metadata.accessMode } : {}),
+      ...(body.metadata?.auditScope ? { auditScope: body.metadata.auditScope } : {}),
+      ...(body.metadata?.loginUrl ? { loginUrl: body.metadata.loginUrl } : {}),
+      ...(body.metadata?.testAccount ? { testAccount: body.metadata.testAccount } : {}),
+      ...(body.metadata?.customInstructions ? { customInstructions: body.metadata.customInstructions } : {}),
+      safetyRules: body.metadata?.safetyRules ?? []
     });
 
     const correlationId = randomUUID();
@@ -47,7 +55,8 @@ export async function POST(request: Request) {
       auditId: audit.id,
       targetUrl,
       correlationId,
-      auditMode: body.auditMode
+      auditMode: body.auditMode,
+      missionContext
     });
 
     console.log(JSON.stringify({ level: "info", event: "audit_planning_enqueued", auditId: audit.id }));

@@ -1,4 +1,4 @@
-import type { BrowserAgentDecisionInput, PlannerInput } from "@ai-swarm-qa/shared";
+import { defaultAuditMissionContext, type BrowserAgentDecisionInput, type PlannerInput } from "@ai-swarm-qa/shared";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import {
@@ -24,6 +24,7 @@ function plannerInput(): PlannerInput {
     auditId: "audit_1",
     targetUrl: "http://localhost:4100/",
     auditMode: "standard",
+    missionContext: defaultAuditMissionContext,
     baselineMissions: [
       { type: "error-reviewer", priority: 10, required: true, limits: { maxPages: 1, maxLinks: 0, maxInteractions: 0 } },
       { type: "link-tester", priority: 20, required: true, limits: { maxPages: 1, maxLinks: 10, maxInteractions: 0 } },
@@ -66,7 +67,8 @@ function plannerInput(): PlannerInput {
       noDestructiveActions: true,
       sameOriginOnly: true,
       noPayments: true,
-      noAccountCreation: true
+      noAccountCreation: true,
+      noStoredPasswords: true
     }
   };
 }

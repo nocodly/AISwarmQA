@@ -4,6 +4,7 @@ import {
   assertValidAuditTransition,
   assertValidMissionTransition,
   auditJobSchema,
+  auditMissionContextSchema,
   auditRequestSchema,
   browserAgentActionSchema,
   browserAgentProgressFingerprint,
@@ -25,7 +26,9 @@ import {
   plannerOutputSchema,
   isSafeInteractionLabel,
   planAuditMissions,
+  planAuditJobSchema,
   redactSensitiveText,
+  sanitizeAuditMissionContext,
   resolveSameOriginBrowserUrl,
   sanitizeBrowserObservation,
   sanitizeSwarmSharedState,
@@ -40,6 +43,50 @@ describe("shared contracts", () => {
       auditMode: "standard",
       url: "http://localhost:4100"
     });
+  });
+
+  it("accepts mission context metadata without accepting plaintext passwords", () => {
+    expect(
+      auditRequestSchema.parse({
+        url: "http://localhost:4100",
+        metadata: {
+          accessMode: "temporary-account",
+          auditScope: "auth",
+          loginUrl: "https://example.com/login",
+          testAccount: "qa-test@example.com",
+          customInstructions: "Focus on sign in and account gates.",
+          safetyRules: ["Do not delete data"]
+        }
+      }).metadata
+    ).toMatchObject({ accessMode: "temporary-account", auditScope: "auth" });
+
+    expect(() =>
+      auditRequestSchema.parse({
+        url: "http://localhost:4100",
+        metadata: {
+          accessMode: "temporary-account",
+          testPassword: "never-store-this"
+        }
+      })
+    ).toThrow();
+  });
+
+  it("sanitizes audit mission context before queueing or planning", () => {
+    const context = sanitizeAuditMissionContext({
+      accessMode: "guided-instructions",
+      auditScope: "checkout",
+      loginUrl: "https://example.com/login?token=secret",
+      testAccount: "qa-test@example.com",
+      customInstructions: "Password: hunter2. Use token=abc123 and inspect checkout.",
+      safetyRules: ["API key = sk_test_12345678901234567890 should not appear"]
+    });
+    expect(auditMissionContextSchema.parse(context)).toMatchObject({
+      accessMode: "guided-instructions",
+      auditScope: "checkout",
+      loginUrl: "https://example.com/login?token=%5BREDACTED%5D"
+    });
+    expect(JSON.stringify(context)).not.toContain("hunter2");
+    expect(JSON.stringify(context)).not.toContain("qa-test@example.com");
   });
 
   it("creates deterministic finding fingerprints", () => {
@@ -88,6 +135,20 @@ describe("shared contracts", () => {
         correlationId: "correlation_1"
       })
     ).toMatchObject({ auditId: "audit_1", missionId: "mission_1" });
+  });
+
+  it("carries mission context in planning queue payloads", () => {
+    expect(
+      planAuditJobSchema.parse({
+        auditId: "audit_1",
+        targetUrl: "http://localhost:4100",
+        correlationId: "correlation_1",
+        auditMode: "standard",
+        missionContext: { accessMode: "guided-instructions", auditScope: "mobile", customInstructions: "Check mobile nav." }
+      })
+    ).toMatchObject({
+      missionContext: { accessMode: "guided-instructions", auditScope: "mobile", customInstructions: "Check mobile nav." }
+    });
   });
 
   it("plans the deterministic standard mission set in priority order", () => {
@@ -402,12 +463,15 @@ describe("shared contracts", () => {
       auditId: "audit_1",
       targetUrl: "http://localhost:4100/",
       auditMode: "standard",
+      missionContext: { accessMode: "guided-instructions", auditScope: "auth", customInstructions: "Inspect account gates.", safetyRules: [] },
       baselineMissions: baseline,
       snapshot,
       maxProposedMissions: 8,
       maxPriorityRoutes: 10
     });
     expect(input.availableMissionTypes).toHaveLength(8);
+    expect(input.missionContext).toMatchObject({ accessMode: "guided-instructions", auditScope: "auth" });
+    expect(input.constraints.noStoredPasswords).toBe(true);
     expect(input.baselineMissions.map((mission) => mission.type)).not.toContain("autonomous-browser");
     expect(input.baselineMissions.map((mission) => mission.type)).not.toContain("browser-swarm");
     expect(

@@ -266,7 +266,8 @@ export async function persistMissionPlan(input: { auditId: string; missions: Mer
           instructions: {
             viewport: definition.viewport,
             limits: definition.limits,
-            planning: definition.planning
+            planning: definition.planning,
+            missionContext: definition.missionContext
           }
         },
         update: {
@@ -274,7 +275,8 @@ export async function persistMissionPlan(input: { auditId: string; missions: Mer
           instructions: {
             viewport: definition.viewport,
             limits: definition.limits,
-            planning: definition.planning
+            planning: definition.planning,
+            missionContext: definition.missionContext
           }
         }
       })
@@ -1294,12 +1296,7 @@ export async function getAuditFindings(auditId: string, options: { workspaceId?:
       id: evidence.id,
       type: evidence.type,
       content: evidence.content,
-      localPath: evidence.localPath,
       storageProvider: evidence.storageProvider,
-      storageBucket: evidence.storageBucket,
-      storagePath: evidence.storagePath,
-      storageContentType: evidence.storageContentType,
-      storageSizeBytes: evidence.storageSizeBytes,
       publicEvidenceId: evidence.publicEvidenceId,
       externalSharingEnabled: evidence.externalSharingEnabled,
       metadata: evidence.metadata,

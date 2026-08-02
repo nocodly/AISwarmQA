@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bot, CameraOff, CheckCircle2, Download, ExternalLink, FileDown, Share2, UploadCloud } from "lucide-react";
-import { GitHubLogo } from "@/components/BrandIcons";
+import { AppSelect } from "@/components/AppSelect";
+import { LinearIcon } from "@/components/BrandIcons";
 
 type AuditSummary = {
   id: string;
@@ -172,7 +172,6 @@ type Finding = {
     id: string;
     type: string;
     content: string | null;
-    localPath: string | null;
     metadata: unknown;
   }>;
 };
@@ -242,6 +241,10 @@ type GitHubExportBatch = {
   }>;
 };
 
+type GitHubRepositoryMetadata = {
+  assignees: string[];
+};
+
 const terminalStatuses = new Set(["completed", "failed", "cancelled"]);
 
 function formatDate(value: string | null) {
@@ -262,12 +265,19 @@ function severityClass(severity: string) {
   return "info";
 }
 
+function severitySignal(severity: string) {
+  const normalized = severity.toLowerCase();
+  if (normalized.includes("critical") || normalized.includes("high")) return "danger";
+  if (normalized.includes("medium")) return "warning";
+  return "weak";
+}
+
 function evidenceImageUrl(finding: Finding) {
   const evidence = finding.evidence.find((item) => {
-    const value = item.content ?? item.localPath ?? "";
+    const value = item.content ?? "";
     return /^https?:\/\//.test(value) && (item.type.toLowerCase().includes("screenshot") || /\.(png|jpe?g|webp)$/i.test(value));
   });
-  return evidence?.content ?? evidence?.localPath ?? null;
+  return evidence?.content ?? null;
 }
 
 function shortUrl(value: string) {
@@ -291,6 +301,10 @@ export function AuditDetails({ auditId }: { auditId: string }) {
   const [githubBatch, setGitHubBatch] = useState<GitHubExportBatch | null>(null);
   const [githubMessage, setGitHubMessage] = useState<string | null>(null);
   const [includeExternalEvidence, setIncludeExternalEvidence] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [selectedAssignee, setSelectedAssignee] = useState("");
+  const [repositoryMetadata, setRepositoryMetadata] = useState<GitHubRepositoryMetadata | null>(null);
+  const [exporting, setExporting] = useState(false);
   const [cancelMessage, setCancelMessage] = useState<string | null>(null);
   const [canceling, setCanceling] = useState(false);
   const [openedFindingId, setOpenedFindingId] = useState<string | null>(null);
@@ -391,13 +405,10 @@ export function AuditDetails({ auditId }: { auditId: string }) {
   }, [auditId]);
 
   useEffect(() => {
-    if (findings.length > 0 && selectedFindingIds.length === 0) {
-      setSelectedFindingIds(findings.map((finding) => finding.id));
-    }
     if (findings.length > 0 && !openedFindingId) {
       setOpenedFindingId(findings[0]!.id);
     }
-  }, [findings, openedFindingId, selectedFindingIds.length]);
+  }, [findings, openedFindingId]);
 
   useEffect(() => {
     if (audit?.status !== "completed") {
@@ -423,6 +434,30 @@ export function AuditDetails({ auditId }: { auditId: string }) {
       isActive = false;
     };
   }, [audit?.status]);
+
+  useEffect(() => {
+    if (!selectedRepositoryId || !exportModalOpen) {
+      return;
+    }
+    let isActive = true;
+    async function loadRepositoryMetadata() {
+      try {
+        const response = await fetch(`/api/integrations/github/repositories/${selectedRepositoryId}/metadata`, { cache: "no-store" });
+        const body = await response.json();
+        if (response.ok && isActive) {
+          setRepositoryMetadata({ assignees: body.assignees ?? [] });
+        }
+      } catch {
+        if (isActive) {
+          setRepositoryMetadata({ assignees: [] });
+        }
+      }
+    }
+    void loadRepositoryMetadata();
+    return () => {
+      isActive = false;
+    };
+  }, [exportModalOpen, selectedRepositoryId]);
 
   useEffect(() => {
     if (!githubBatch || ["completed", "partially_completed", "failed", "cancelled"].includes(githubBatch.batch.status)) {
@@ -519,6 +554,7 @@ export function AuditDetails({ auditId }: { auditId: string }) {
       body: JSON.stringify({
         findingIds: selectedFindingIds,
         repositoryId: selectedRepositoryId || undefined,
+        assignees: selectedAssignee ? [selectedAssignee] : [],
         excludeInformational,
         includeExternalEvidence,
         confirmed: false
@@ -527,13 +563,15 @@ export function AuditDetails({ auditId }: { auditId: string }) {
     const body = await response.json();
     if (!response.ok) {
       setGitHubMessage(body.error?.message ?? "GitHub export preview failed.");
-      return;
+      return null;
     }
-    setGitHubPreview(body as GitHubExportPreview);
+    const preview = body as GitHubExportPreview;
+    setGitHubPreview(preview);
+    return preview;
   }
 
-  async function confirmGitHubExport() {
-    if (!githubPreview) {
+  async function confirmGitHubExport(preview = githubPreview) {
+    if (!preview) {
       return;
     }
     const response = await fetch(`/api/audits/${auditId}/github-export`, {
@@ -541,7 +579,8 @@ export function AuditDetails({ auditId }: { auditId: string }) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         findingIds: selectedFindingIds,
-        repositoryId: githubPreview.repository.id,
+        repositoryId: preview.repository.id,
+        assignees: selectedAssignee ? [selectedAssignee] : [],
         excludeInformational,
         includeExternalEvidence,
         confirmed: true
@@ -557,6 +596,19 @@ export function AuditDetails({ auditId }: { auditId: string }) {
       setGitHubBatch((await batchResponse.json()) as GitHubExportBatch);
     }
     setGitHubMessage("GitHub export queued.");
+    setExportModalOpen(false);
+  }
+
+  async function exportIssuesFromModal() {
+    setExporting(true);
+    try {
+      const preview = await previewGitHubExport();
+      if (preview) {
+        await confirmGitHubExport(preview);
+      }
+    } finally {
+      setExporting(false);
+    }
   }
 
   async function retryGitHubExport() {
@@ -577,6 +629,11 @@ export function AuditDetails({ auditId }: { auditId: string }) {
 
   function toggleFinding(findingId: string) {
     setSelectedFindingIds((current) => (current.includes(findingId) ? current.filter((id) => id !== findingId) : [...current, findingId]));
+    setGitHubPreview(null);
+  }
+
+  function toggleAllFindings() {
+    setSelectedFindingIds((current) => (current.length === findings.length ? [] : findings.map((finding) => finding.id)));
     setGitHubPreview(null);
   }
 
@@ -608,76 +665,28 @@ export function AuditDetails({ auditId }: { auditId: string }) {
         </div>
         <div className="audit-action-buttons">
           <button type="button" onClick={() => downloadReport("json")} disabled={findings.length === 0}>
-            <Download aria-hidden="true" size={17} /> Download JSON
-          </button>
-          <button type="button" onClick={() => downloadReport("csv")} disabled={findings.length === 0}>
-            <FileDown aria-hidden="true" size={17} /> Download CSV
+            <LinearIcon name="download" /> Download
           </button>
           <button type="button" onClick={() => void shareReport()}>
-            <Share2 aria-hidden="true" size={17} /> Share
+            <LinearIcon name="share" /> Share
           </button>
-          <button type="button" onClick={() => void cancelAudit()} disabled={isTerminal || canceling}>
+          {!isTerminal ? <button type="button" onClick={() => void cancelAudit()} disabled={canceling}>
             {canceling ? "Cancelling" : "Cancel"}
-          </button>
-          <button type="button" onClick={() => void previewGitHubExport()} disabled={selectedFindingIds.length === 0}>
-            <GitHubLogo /> Preview export
-          </button>
-          <button className="primary-report-action" type="button" onClick={() => void confirmGitHubExport()} disabled={!githubPreview}>
-            <UploadCloud aria-hidden="true" size={17} /> Create issues
+          </button> : null}
+          <button className="github-export-button" type="button" onClick={() => setExportModalOpen(true)} disabled={selectedFindingIds.length === 0 || !githubStatus?.connected}>
+            <LinearIcon name="github" /> Export issues <span>{selectedFindingIds.length} selected</span>
           </button>
         </div>
       </section>
 
       <section className="audit-export-strip">
         <div className="export-target">
-          <GitHubLogo />
+          <LinearIcon name="github" />
           <div>
             <strong>{selectedRepository ? selectedRepository.fullName : githubStatus?.connected ? "Choose a GitHub repository" : "GitHub export"}</strong>
-            <p>
-              {githubPreview
-                ? `${githubPreview.issuesToCreate} issue${githubPreview.issuesToCreate === 1 ? "" : "s"} ready. ${githubPreview.alreadyExportedCount} already exported.`
-                : "Preview first, then create issues only after explicit confirmation."}
-            </p>
+            <p>{githubMessage ?? "Choose findings, then export them to a connected GitHub repository."}</p>
           </div>
         </div>
-        <div className="export-controls">
-          <label>
-            <input
-              type="checkbox"
-              checked={excludeInformational}
-              onChange={(event) => setExcludeInformational(event.target.checked)}
-            />{" "}
-            Skip informational
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={includeExternalEvidence}
-              onChange={(event) => {
-                setIncludeExternalEvidence(event.target.checked);
-                setGitHubPreview(null);
-              }}
-            />{" "}
-            Public evidence route
-          </label>
-          {githubStatus?.repositories.length ? (
-            <select value={selectedRepositoryId} onChange={(event) => setSelectedRepositoryId(event.target.value)}>
-              {githubStatus.repositories.map((repository) => (
-                <option value={repository.id} key={repository.id}>
-                  {repository.fullName}
-                  {repository.private ? " private" : " public"}
-                  {repository.archived ? " archived" : ""}
-                  {!repository.issuesEnabled ? " issues disabled" : ""}
-                </option>
-              ))}
-            </select>
-          ) : githubStatus?.connectUrl ? (
-            <a className="internal-link" href={`${githubStatus.connectUrl}?returnUrl=${encodeURIComponent(`/audits/${auditId}`)}`}>
-              Connect GitHub <ExternalLink aria-hidden="true" size={15} />
-            </a>
-          ) : null}
-        </div>
-        {githubMessage ? <p className="export-message">{githubMessage}</p> : null}
         {cancelMessage ? <p className="export-message">{cancelMessage}</p> : null}
         {githubPreview ? (
           <div className="export-preview-summary">
@@ -699,10 +708,61 @@ export function AuditDetails({ auditId }: { auditId: string }) {
         ) : null}
       </section>
 
+      {exportModalOpen ? (
+        <section className="modal-backdrop" role="presentation">
+          <div aria-label="Export issues to GitHub" aria-modal="true" className="github-export-modal" role="dialog">
+            <header>
+              <div>
+                <p className="eyebrow">GitHub export</p>
+                <h2>Export issues</h2>
+              </div>
+              <button type="button" onClick={() => setExportModalOpen(false)}>Close</button>
+            </header>
+            <div className="github-export-form">
+              <AppSelect
+                label="Repository"
+                onChange={(nextValue) => {
+                  setSelectedRepositoryId(nextValue);
+                  setGitHubPreview(null);
+                }}
+                options={(githubStatus?.repositories ?? []).map((repository) => ({ label: repository.fullName, value: repository.id }))}
+                value={selectedRepositoryId}
+              />
+              <AppSelect
+                label="Assignee"
+                onChange={setSelectedAssignee}
+                options={[
+                  { label: "Skip assignee", value: "" },
+                  ...(repositoryMetadata?.assignees ?? []).map((assignee) => ({ label: assignee, value: assignee }))
+                ]}
+                value={selectedAssignee}
+              />
+              <label className="checkbox-line">
+                <input checked={includeExternalEvidence} onChange={(event) => {
+                  setIncludeExternalEvidence(event.target.checked);
+                  setGitHubPreview(null);
+                }} type="checkbox" />
+                Include public evidence link
+              </label>
+              <p>{selectedFindingIds.length} selected issue{selectedFindingIds.length === 1 ? "" : "s"} will be exported.</p>
+            </div>
+            <footer>
+              <button className="ghost-button compact" type="button" onClick={() => setExportModalOpen(false)}>Cancel</button>
+              <button className="github-export-button" type="button" onClick={() => void exportIssuesFromModal()} disabled={exporting || !selectedRepositoryId || selectedFindingIds.length === 0}>
+                <LinearIcon name="github" /> {exporting ? "Exporting..." : `Export ${selectedFindingIds.length} issue${selectedFindingIds.length === 1 ? "" : "s"}`}
+              </button>
+            </footer>
+          </div>
+        </section>
+      ) : null}
+
       <section className="report-status-strip" aria-label="Audit summary">
         <div>
           <span className="status-kicker">Status</span>
-          <strong>{audit.status}</strong>
+          <strong className="status-value-with-dot">
+            <span className={`agent-state-dot ${audit.status === "completed" ? "active" : "inactive"}`} aria-label={`${audit.status} status`} title={`${audit.status} status`} />
+            {audit.status}
+          </strong>
         </div>
         <div>
           <span className="status-kicker">Findings</span>
@@ -733,17 +793,14 @@ export function AuditDetails({ auditId }: { auditId: string }) {
               <h2>Issues to review</h2>
             </div>
             <div className="selection-controls">
-              <button type="button" onClick={() => setSelectedFindingIds(findings.map((finding) => finding.id))} disabled={findings.length === 0}>
-                Select all
-              </button>
-              <button type="button" onClick={() => setSelectedFindingIds([])} disabled={selectedFindingIds.length === 0}>
-                Clear
+              <button type="button" onClick={toggleAllFindings} disabled={findings.length === 0}>
+                {selectedFindingIds.length === findings.length && findings.length > 0 ? "Deselect all" : "Select all"}
               </button>
             </div>
           </div>
           {audit.status === "completed" && findings.length === 0 ? (
             <div className="empty-report-state">
-              <CheckCircle2 aria-hidden="true" size={24} />
+              <LinearIcon name="issues" />
               <strong>No findings were found in this run.</strong>
               <p>This does not mean the site is bug-free. Try a deeper authenticated or checkout-focused audit next.</p>
             </div>
@@ -755,10 +812,10 @@ export function AuditDetails({ auditId }: { auditId: string }) {
                 key={finding.id}
                 onClick={() => setOpenedFindingId(finding.id)}
               >
-                <label className="finding-select" onClick={(event) => event.stopPropagation()}>
+                <label className="finding-select" onClick={(event) => event.stopPropagation()} aria-label={`Select ${finding.title}`}>
                   <input type="checkbox" checked={selectedFindingIds.includes(finding.id)} onChange={() => toggleFinding(finding.id)} />
                 </label>
-                <div className={`severity-tag ${severityClass(finding.severity)}`}>{finding.severity}</div>
+                <span className={`signal-dot signal-${severitySignal(finding.severity)}`} aria-label={`${finding.severity} severity`} title={`${finding.severity} severity`} />
                 <div className="finding-feed-body">
                   <h3>{finding.title}</h3>
                   <p>{finding.summary}</p>
@@ -777,8 +834,10 @@ export function AuditDetails({ auditId }: { auditId: string }) {
           <aside className="issue-preview-panel">
             <div className="issue-preview-header">
               <div>
-                <div className={`severity-tag ${severityClass(openedFinding.severity)}`}>{openedFinding.severity}</div>
-                <h2>{openedFinding.title}</h2>
+                <div className="issue-preview-title-line">
+                  <span className={`signal-dot signal-${severitySignal(openedFinding.severity)}`} aria-label={`${openedFinding.severity} severity`} title={`${openedFinding.severity} severity`} />
+                  <h2>{openedFinding.title}</h2>
+                </div>
                 <p>{openedFinding.description || openedFinding.summary}</p>
               </div>
             </div>
@@ -789,7 +848,7 @@ export function AuditDetails({ auditId }: { auditId: string }) {
                 <img src={openedEvidenceImage} alt="Finding evidence screenshot" />
               ) : (
                 <div className="real-evidence-unavailable">
-                  <CameraOff aria-hidden="true" size={34} />
+                  <LinearIcon name="views" />
                   <span>{shortUrl(openedFinding.affectedUrl)}</span>
                   <strong>Real screenshot unavailable</strong>
                   <p>This finding still includes captured text evidence, affected URL, and replay metadata. Screenshot markup is shown only when a real evidence image is stored.</p>
@@ -848,7 +907,7 @@ export function AuditDetails({ auditId }: { auditId: string }) {
           {agentActivity.slice(0, 6).map((agent) => (
             <article className="agent-activity-card" key={agent.id}>
               <div className="agent-icon">
-                <Bot aria-hidden="true" size={18} />
+                <LinearIcon name="teams" />
               </div>
               <div>
                 <p className="eyebrow">{agent.eyebrow}</p>
@@ -867,26 +926,14 @@ export function AuditDetails({ auditId }: { auditId: string }) {
         </div>
       </section>
 
-      <section className="product-context-panel">
-        <div>
-          <p className="eyebrow">Expected behavior context</p>
-          <h2>Give agents the product map</h2>
-          <p>
-            Strong audits need more than visuals. Add a sitemap, button destination map, auth test account, forbidden actions, brand rules, and critical user journeys so agents compare the live site against the intended product behavior.
-          </p>
-        </div>
-        <div className="context-pill-grid">
-          <span>Sitemap</span>
-          <span>Button map</span>
-          <span>Auth flows</span>
-          <span>Design rules</span>
-          <span>Critical journeys</span>
-          <span>Forbidden actions</span>
-        </div>
-      </section>
-
       <details className="technical-details">
-        <summary>Technical run data</summary>
+        <summary>
+          <span>Technical run data</span>
+          <small>Planner, mission, browser replay, and export diagnostics for debugging.</small>
+        </summary>
+        <p className="technical-details-intro">
+          This section is for development and support. It explains how the audit was planned, which missions ran, what the browser agents did, and which raw signals produced the report.
+        </p>
 
       <section className="panel technical-report-panel" style={{ marginTop: 16 }}>
         <h2>Summary</h2>

@@ -1,5 +1,5 @@
 import { readRuntimeConfig } from "@ai-swarm-qa/config";
-import { createGitHubAuthState } from "@ai-swarm-qa/database";
+import { assertWorkspacePermission, createGitHubAuthState } from "@ai-swarm-qa/database";
 import { hashState, newStateNonce, signGitHubState } from "@ai-swarm-qa/github";
 import { jsonErrorFromUnknown } from "../../../errors";
 import { requireAuth } from "@/lib/auth";
@@ -19,6 +19,7 @@ function safeReturnUrl(request: Request): string {
 export async function GET(request: Request) {
   try {
     const actor = await requireAuth(request);
+    await assertWorkspacePermission({ workspaceId: actor.workspaceId, userId: actor.userId, permission: "github:manage" });
     const config = readRuntimeConfig();
     const appConfigured = Boolean(config.githubAppId && config.githubAppClientId && config.githubAppClientSecret && config.githubAppPrivateKey);
     if (!appConfigured || !config.githubAppSetupUrl) {

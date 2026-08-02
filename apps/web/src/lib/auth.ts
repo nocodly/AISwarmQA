@@ -86,7 +86,7 @@ function parseCookieAuthToken(value: string) {
   return null;
 }
 
-async function verifySupabaseToken(input: { supabaseUrl: string; publishableKey: string; token: string }) {
+export async function verifySupabaseToken(input: { supabaseUrl: string; publishableKey: string; token: string }) {
   const response = await fetch(`${input.supabaseUrl.replace(/\/$/, "")}/auth/v1/user`, {
     headers: {
       apikey: input.publishableKey,
@@ -98,4 +98,3 @@ async function verifySupabaseToken(input: { supabaseUrl: string; publishableKey:
   }
   return (await response.json()) as SupabaseUserResponse;
 }
-

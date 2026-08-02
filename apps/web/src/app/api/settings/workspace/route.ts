@@ -14,7 +14,14 @@ export async function GET(request: Request) {
       where: { id: actor.workspaceId },
       include: { members: { include: { user: true }, orderBy: { createdAt: "asc" } }, invitations: { orderBy: { createdAt: "desc" }, take: 20 } }
     });
+    const currentUser = workspace?.members.find((member) => member.userId === actor.userId)?.user ?? null;
     return Response.json({
+      account: {
+        id: actor.userId,
+        email: actor.email,
+        name: currentUser?.name ?? null,
+        login: actor.email.split("@")[0] ?? actor.email
+      },
       workspace: workspace
         ? {
             id: workspace.id,

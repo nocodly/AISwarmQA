@@ -3258,7 +3258,8 @@ a.ghost-button:hover {
   padding: 0 14px;
 }
 
-.auth-input svg {
+.auth-input svg,
+.auth-input .linear-icon {
   color: var(--cyan);
   filter: drop-shadow(0 0 10px rgba(53, 217, 255, 0.4));
   flex: 0 0 auto;
@@ -6057,5 +6058,4000 @@ a.ghost-button:hover {
   .issue-preview-panel,
   .product-context-panel {
     padding: 14px 0;
+  }
+}
+/* Linear-inspired app design system. Landing and marketing styles above stay untouched. */
+.app-shell {
+  --linear-bg: #f7f8fa;
+  --linear-sidebar: #fbfbfc;
+  --linear-surface: #ffffff;
+  --linear-surface-2: #f2f3f5;
+  --linear-surface-hover: #f6f7f8;
+  --linear-border: #e1e4e8;
+  --linear-border-strong: #d7dbe0;
+  --linear-text: #1f2328;
+  --linear-text-2: #41464d;
+  --linear-muted: #737982;
+  --linear-soft: #9aa1aa;
+  --linear-accent: #5e6ad2;
+  --linear-accent-hover: #515cc5;
+  --linear-accent-soft: rgba(94, 106, 210, 0.1);
+  --linear-yellow: #c29202;
+  --linear-green: #238636;
+  --linear-red: #cf222e;
+  --linear-radius: 6px;
+  --linear-radius-lg: 10px;
+  --linear-sidebar-width: 275px;
+  --linear-font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  background: var(--linear-bg);
+  color: var(--linear-text);
+  display: grid;
+  font-family: var(--linear-font);
+  font-size: 13px;
+  grid-template-columns: var(--linear-sidebar-width) minmax(0, 1fr);
+  line-height: 1.45;
+  min-height: 100vh;
+}
+
+.app-shell *,
+.app-shell *::before,
+.app-shell *::after {
+  box-sizing: border-box;
+  box-shadow: none !important;
+}
+
+.app-sidebar {
+  background: var(--linear-sidebar);
+  border-right: 1px solid var(--linear-border);
+  height: 100vh;
+  overflow-y: auto;
+  padding: 18px 14px;
+  position: sticky;
+  top: 0;
+}
+
+.app-brand {
+  align-items: center;
+  color: var(--linear-text) !important;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 8px;
+  margin: 0 0 26px;
+  min-height: 28px;
+  padding: 4px;
+  text-decoration: none;
+}
+
+.app-brand strong,
+.app-brand span {
+  color: var(--linear-text) !important;
+}
+
+.brand-mark {
+  align-items: center;
+  background: var(--linear-accent);
+  border-radius: 5px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 700;
+  height: 20px;
+  justify-content: center;
+  letter-spacing: 0;
+  width: 20px;
+}
+
+.app-nav {
+  display: grid;
+  gap: 18px;
+}
+
+.app-nav-group {
+  display: grid;
+  gap: 2px;
+}
+
+.app-nav-group > span {
+  color: var(--linear-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  padding: 0 6px 4px;
+  text-transform: none;
+}
+
+.app-nav a {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  color: var(--linear-text-2) !important;
+  display: flex;
+  font-size: 13px;
+  font-weight: 500;
+  gap: 10px;
+  min-height: 28px;
+  padding: 4px 6px;
+  text-decoration: none;
+  transition: background 120ms ease-out, color 120ms ease-out;
+}
+
+.app-nav a:hover {
+  background: var(--linear-surface-2);
+  color: var(--linear-text) !important;
+}
+
+.linear-icon {
+  background: currentColor;
+  color: var(--linear-muted);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 16px;
+  -webkit-mask: var(--linear-icon-url) center / contain no-repeat;
+  mask: var(--linear-icon-url) center / contain no-repeat;
+  width: 16px;
+}
+
+.app-shell .brand-icon,
+.app-shell .github-logo {
+  background: transparent !important;
+  border: 0 !important;
+  color: var(--linear-muted) !important;
+  height: 16px;
+  width: 16px;
+}
+
+.app-shell .linear-icon {
+  color: var(--linear-muted) !important;
+  height: 16px;
+  width: 16px;
+}
+
+.app-shell .brand-icon svg,
+.app-shell .github-logo svg {
+  color: currentColor !important;
+  height: 16px;
+  width: 16px;
+}
+
+.app-shell .brand-icon path,
+.app-shell .github-logo path,
+.app-shell .icon-shell,
+.app-shell .icon-detail {
+  stroke: currentColor !important;
+}
+
+.app-main {
+  background: var(--linear-bg);
+  min-width: 0;
+  padding: 32px 40px 56px;
+  position: relative;
+}
+
+.app-main::before {
+  display: none !important;
+}
+
+.simple-dashboard-header,
+.simple-dashboard,
+.app-page-header,
+.page-header,
+.audit-report-topbar,
+.app-shell .app-page,
+.app-shell .app-page.compact,
+.app-shell .detail-page,
+.app-shell .report-page,
+.github-issues-shell {
+  margin-inline: auto;
+  max-width: 1160px;
+  width: 100%;
+}
+
+.simple-dashboard-header,
+.app-page-header,
+.page-header,
+.audit-report-topbar {
+  align-items: flex-start;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-bottom: 22px;
+}
+
+.workspace-kicker,
+.eyebrow,
+.status-kicker {
+  color: var(--linear-muted) !important;
+  font-family: var(--linear-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 18px;
+  margin: 0 0 4px;
+  text-transform: none;
+}
+
+.app-shell h1,
+.app-shell h2,
+.app-shell h3,
+.app-shell p {
+  margin-top: 0;
+}
+
+.simple-dashboard-header h1,
+.app-page-header h1,
+.page-header h1,
+.audit-report-topbar h1 {
+  color: var(--linear-text);
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  margin: 0 0 6px;
+}
+
+.simple-dashboard-header p:not(.workspace-kicker),
+.app-page-header p,
+.page-header p,
+.audit-report-topbar p {
+  color: var(--linear-muted);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0;
+  max-width: 680px;
+}
+
+.simple-header-actions,
+.hero-actions,
+.audit-action-buttons,
+.selection-controls,
+.export-preview-summary {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.new-test-button,
+.cta-button,
+.button,
+.primary-report-action,
+.app-shell button.new-test-button,
+.app-shell a.new-test-button {
+  align-items: center;
+  background: var(--linear-accent) !important;
+  border: 1px solid var(--linear-accent) !important;
+  border-radius: 5px;
+  color: #ffffff !important;
+  cursor: pointer;
+  display: inline-flex;
+  font: 600 13px/1 var(--linear-font);
+  gap: 7px;
+  min-height: 30px;
+  padding: 0 11px;
+  text-decoration: none;
+  transition: background 120ms ease-out, border-color 120ms ease-out;
+}
+
+.new-test-button:hover,
+.cta-button:hover,
+.button:hover,
+.primary-report-action:hover {
+  background: var(--linear-accent-hover) !important;
+  border-color: var(--linear-accent-hover) !important;
+}
+
+.new-test-button:disabled,
+.cta-button:disabled,
+.button:disabled,
+.primary-report-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.ghost-button,
+.panel-link,
+.internal-link,
+.audit-action-buttons button,
+.selection-controls button,
+.export-preview-summary button,
+.github-issue-filters button,
+.modal-back {
+  align-items: center;
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 5px;
+  color: var(--linear-text-2) !important;
+  cursor: pointer;
+  display: inline-flex;
+  font: 500 13px/1 var(--linear-font);
+  gap: 7px;
+  min-height: 30px;
+  padding: 0 10px;
+  text-decoration: none;
+}
+
+.ghost-button:hover,
+.panel-link:hover,
+.internal-link:hover,
+.audit-action-buttons button:hover,
+.selection-controls button:hover,
+.export-preview-summary button:hover,
+.modal-back:hover {
+  background: var(--linear-surface-hover) !important;
+  color: var(--linear-text) !important;
+}
+
+.simple-dashboard,
+.app-shell .grid,
+.app-shell .hub-grid,
+.app-shell .dashboard-lower-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.simple-stat-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.simple-main-grid,
+.dashboard-lower-grid,
+.report-findings-layout {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+}
+
+.command-panel,
+.hub-card,
+.panel,
+.card,
+.audit-export-strip,
+.report-status-strip,
+.findings-feed-panel,
+.issue-preview-panel,
+.agent-activity-panel,
+.technical-details,
+.wizard-panel,
+.live-audit-card,
+.dashboard-error,
+.settings-panel,
+.billing-card {
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px;
+  color: var(--linear-text) !important;
+  overflow: hidden;
+}
+
+.command-panel,
+.live-audit-card,
+.hub-card,
+.panel,
+.card,
+.audit-export-strip,
+.report-status-strip,
+.findings-feed-panel,
+.issue-preview-panel,
+.agent-activity-panel,
+.technical-details,
+.wizard-panel,
+.dashboard-error,
+.settings-panel,
+.billing-card {
+  padding: 0;
+}
+
+.panel-head,
+.github-issues-list-head {
+  align-items: center;
+  background: var(--linear-surface-2) !important;
+  border-bottom: 1px solid var(--linear-border) !important;
+  display: flex;
+  justify-content: space-between;
+  min-height: 45px;
+  padding: 10px 14px;
+}
+
+.panel-head h2,
+.live-audit-head h2,
+.command-panel h2,
+.issue-preview-header h2 {
+  color: var(--linear-text);
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.command-panel > h2 {
+  padding: 0 14px;
+}
+
+.command-panel > p {
+  padding: 0 14px;
+}
+
+.command-panel > .github-logo:first-child,
+.command-panel > .brand-icon:first-child {
+  margin: 14px 14px 10px;
+}
+
+.command-panel > .github-logo:first-child + h2,
+.command-panel > .brand-icon:first-child + h2 {
+  margin-top: 0;
+}
+
+.command-panel > .panel-link {
+  margin: 12px 14px 14px;
+}
+
+.panel-head a,
+.live-audit-head a,
+.app-shell a:not(.new-test-button):not(.ghost-button):not(.panel-link):not(.internal-link) {
+  color: var(--linear-accent);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.panel-head a:hover,
+.live-audit-head a:hover,
+.app-shell a:hover {
+  color: var(--linear-accent-hover);
+}
+
+.live-audit-card {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+
+.empty-live-card {
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 142px;
+}
+
+.live-audit-head {
+  align-items: start;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.live-audit-head p,
+.empty-live-card p,
+.empty-mini p,
+.command-panel p,
+.hub-card p,
+.card p,
+.status-copy {
+  color: var(--linear-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.live-audit-head .eyebrow span {
+  background: var(--linear-accent-soft);
+  border: 1px solid rgba(94, 106, 210, 0.16);
+  border-radius: 999px;
+  color: var(--linear-accent);
+  display: inline-flex;
+  font-size: 11px;
+  line-height: 18px;
+  margin-left: 6px;
+  padding: 0 7px;
+}
+
+.simple-progress-row {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.simple-progress-row span,
+.usage-meter i {
+  background: var(--linear-border) !important;
+  border-radius: 999px;
+  display: block;
+  height: 6px;
+  overflow: hidden;
+}
+
+.simple-progress-row b,
+.usage-meter i b {
+  background: var(--linear-accent) !important;
+  display: block;
+  height: 100%;
+}
+
+.simple-progress-row strong {
+  color: var(--linear-text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.simple-audit-facts {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+}
+
+.simple-audit-facts div {
+  background: var(--linear-surface-2) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.simple-audit-facts dt {
+  color: var(--linear-muted);
+  font-size: 12px;
+  margin: 0 0 2px;
+}
+
+.simple-audit-facts dd {
+  color: var(--linear-text);
+  font-size: 13px;
+  font-weight: 650;
+  margin: 0;
+}
+
+.command-metric-card {
+  align-items: center;
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px;
+  color: var(--linear-text) !important;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 74px;
+  padding: 12px;
+  text-decoration: none;
+}
+
+.command-metric-card:hover {
+  background: var(--linear-surface-hover) !important;
+  border-color: var(--linear-border-strong) !important;
+}
+
+.metric-icon {
+  align-items: center;
+  background: var(--linear-surface-2);
+  border: 1px solid var(--linear-border);
+  border-radius: 6px;
+  display: inline-flex;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.metric-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.metric-copy small,
+.metric-copy em {
+  color: var(--linear-muted);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.25;
+}
+
+.metric-copy strong {
+  color: var(--linear-text);
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.15;
+}
+
+.audit-table,
+.compact-list,
+.finding-list,
+.agent-list,
+.finding-feed,
+.mission-list,
+.github-issue-rows {
+  display: grid;
+}
+
+.audit-table-row,
+.finding-mini-row,
+.export-mini-row,
+.agent-row,
+.evidence-thumb,
+.finding-feed-card,
+.agent-activity-card,
+.mission-row,
+.github-issue-row,
+.repo-row {
+  align-items: center;
+  background: var(--linear-surface) !important;
+  border: 0;
+  border-bottom: 1px solid var(--linear-border) !important;
+  border-radius: 0;
+  color: var(--linear-text) !important;
+  display: grid;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 14px;
+  text-decoration: none;
+}
+
+.audit-table-row:last-child,
+.finding-mini-row:last-child,
+.export-mini-row:last-child,
+.agent-row:last-child,
+.evidence-thumb:last-child,
+.finding-feed-card:last-child,
+.github-issue-row:last-child {
+  border-bottom: 0 !important;
+}
+
+.audit-table-row:hover,
+.finding-mini-row:hover,
+.export-mini-row:hover,
+.agent-row:hover,
+.evidence-thumb:hover,
+.finding-feed-card:hover,
+.finding-feed-card.active,
+.github-issue-row:hover,
+.repo-row:hover {
+  background: var(--linear-surface-hover) !important;
+}
+
+.audit-table-row {
+  grid-template-columns: minmax(0, 1.25fr) 100px 100px 110px auto;
+}
+
+.finding-mini-row {
+  grid-template-columns: 14px auto minmax(0, 1fr) minmax(120px, auto);
+}
+
+.export-mini-row {
+  grid-template-columns: 12px minmax(0, 1fr) minmax(118px, auto) minmax(110px, auto);
+}
+
+.agent-row {
+  grid-template-columns: 18px minmax(90px, auto) 90px minmax(0, 1fr) minmax(120px, auto);
+}
+
+.audit-table-row strong,
+.finding-mini-row strong,
+.export-mini-row strong,
+.agent-row strong,
+.github-issue-main strong,
+.repo-row strong {
+  color: var(--linear-text) !important;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-table-row span,
+.audit-table-row em,
+.finding-mini-row span,
+.finding-mini-row em,
+.export-mini-row span,
+.export-mini-row em,
+.agent-row span,
+.agent-row em,
+.agent-row small,
+.github-issue-meta,
+.github-issue-summary,
+.github-issue-side,
+.repo-meta {
+  color: var(--linear-muted) !important;
+  font-size: 12px;
+  font-style: normal;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.finding-row-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.severity-dot,
+.issue-state-dot,
+.repo-state-dot {
+  background: var(--linear-yellow) !important;
+  border-radius: 999px;
+  display: block;
+  height: 8px;
+  width: 8px;
+}
+
+.severity-dot.severity-critical,
+.issue-state-dot.severity-critical,
+.repo-state-dot.blocked {
+  background: var(--linear-red) !important;
+}
+
+.severity-dot.severity-low,
+.repo-state-dot.ready {
+  background: var(--linear-green) !important;
+}
+
+.severity-badge,
+.severity-pill,
+.severity-tag,
+.github-label {
+  align-items: center;
+  background: var(--linear-surface-2) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 999px;
+  color: var(--linear-text-2) !important;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 500;
+  justify-content: center;
+  line-height: 20px;
+  min-height: 22px;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+.severity-badge.severity-critical,
+.severity-pill.critical,
+.severity-tag.critical,
+.github-label.label-critical {
+  color: var(--linear-red) !important;
+}
+
+.severity-badge.severity-high,
+.severity-pill.high,
+.severity-tag.high,
+.github-label.label-high {
+  color: var(--linear-yellow) !important;
+}
+
+.severity-badge.severity-low,
+.severity-pill.low,
+.severity-tag.low,
+.github-label.label-low {
+  color: var(--linear-green) !important;
+}
+
+.github-issues-toolbar {
+  display: grid;
+  margin-bottom: 10px;
+}
+
+.github-filter-input,
+.app-shell input,
+.app-shell textarea,
+.app-shell select,
+.app-shell .input {
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 6px;
+  color: var(--linear-text) !important;
+  font: 13px/1.4 var(--linear-font);
+}
+
+.github-filter-input {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 34px;
+  padding: 0 10px;
+}
+
+.github-filter-input input {
+  background: transparent !important;
+  border: 0 !important;
+  min-width: 0;
+  outline: none;
+}
+
+.app-shell input:focus,
+.app-shell textarea:focus,
+.app-shell select:focus,
+.github-filter-input:focus-within {
+  border-color: var(--linear-accent) !important;
+  outline: 3px solid rgba(94, 106, 210, 0.16);
+}
+
+.github-issues-list {
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.github-issues-list-head {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto auto minmax(0, 1fr);
+}
+
+.github-issue-tabs,
+.github-issue-filters,
+.github-issue-side,
+.github-issue-title-line {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.github-issue-tabs span,
+.github-issue-filters button {
+  color: var(--linear-muted) !important;
+  font-size: 12px;
+}
+
+.github-issue-tabs span.active {
+  color: var(--linear-text) !important;
+  font-weight: 600;
+}
+
+.github-issue-tabs b {
+  background: var(--linear-surface);
+  border: 1px solid var(--linear-border);
+  border-radius: 999px;
+  color: var(--linear-muted);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 0 6px;
+}
+
+.github-issue-filters {
+  justify-content: flex-end;
+}
+
+.github-issue-filters button {
+  background: transparent !important;
+  border: 0 !important;
+  min-height: 24px;
+  padding: 0;
+}
+
+.github-issue-check input {
+  accent-color: var(--linear-accent);
+  height: 14px;
+  margin: 0;
+  width: 14px;
+}
+
+.github-issue-row {
+  grid-template-columns: auto 16px minmax(0, 1fr) minmax(160px, auto);
+  min-height: 44px;
+}
+
+.github-open-icon {
+  background: transparent !important;
+  border: 0 !important;
+  color: var(--linear-accent) !important;
+  height: 14px;
+  width: 14px;
+}
+
+.github-issue-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.github-issue-title-line {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.github-issue-side {
+  gap: 14px;
+  justify-content: flex-end;
+}
+
+.github-empty-list,
+.empty-mini {
+  color: var(--linear-muted);
+  padding: 20px 14px;
+}
+
+.empty-mini {
+  display: grid;
+  gap: 8px;
+}
+
+.evidence-thumb {
+  grid-template-columns: 18px minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+
+.dashboard-error {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  margin: 0 auto 16px;
+  max-width: 1160px;
+  padding: 12px 14px;
+}
+
+.dashboard-skeleton {
+  display: grid;
+  gap: 10px;
+  margin: 0 auto;
+  max-width: 1160px;
+}
+
+.dashboard-skeleton span {
+  animation: linearPulse 1.2s ease-in-out infinite;
+  background: var(--linear-surface-2);
+  border: 1px solid var(--linear-border);
+  border-radius: 8px;
+  height: 44px;
+}
+
+@keyframes linearPulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+.modal-backdrop {
+  align-items: center;
+  background: rgba(31, 35, 40, 0.32);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 24px;
+  position: fixed;
+  z-index: 50;
+}
+
+.new-audit-modal {
+  background: var(--linear-surface);
+  border: 1px solid var(--linear-border);
+  border-radius: 12px;
+  color: var(--linear-text);
+  display: grid;
+  max-height: min(780px, calc(100vh - 48px));
+  max-width: 680px;
+  overflow: auto;
+  width: min(680px, 100%);
+}
+
+.new-audit-modal header,
+.new-audit-modal footer {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 16px;
+}
+
+.new-audit-modal header {
+  border-bottom: 1px solid var(--linear-border);
+}
+
+.new-audit-modal footer {
+  border-top: 1px solid var(--linear-border);
+}
+
+.new-audit-modal header span,
+.modal-steps span {
+  color: var(--linear-muted);
+  font-size: 12px;
+}
+
+.new-audit-modal header h2,
+.launch-review h3 {
+  color: var(--linear-text);
+  font-size: 18px;
+  margin: 0;
+}
+
+.new-audit-modal header button {
+  background: transparent !important;
+  border: 0 !important;
+  color: var(--linear-muted);
+  cursor: pointer;
+}
+
+.modal-steps {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 12px 16px 0;
+}
+
+.modal-steps span {
+  background: var(--linear-surface-2);
+  border-radius: 999px;
+  min-height: 6px;
+  overflow: hidden;
+  text-indent: -999px;
+}
+
+.modal-steps span.active,
+.modal-steps span.done {
+  background: var(--linear-accent);
+}
+
+.modal-step {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.big-input {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.big-input input {
+  min-height: 42px;
+}
+
+.modal-choice-grid,
+.scope-list {
+  display: grid;
+  gap: 8px;
+}
+
+.modal-choice-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.modal-choice-grid button,
+.scope-list button,
+.choice-card,
+.safety-item,
+.credential-panel,
+.safe-note,
+.review-item {
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px;
+  color: var(--linear-text);
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  text-align: left;
+}
+
+.modal-choice-grid button.selected,
+.scope-list button.selected,
+.choice-card.selected,
+.safety-item.selected {
+  background: var(--linear-accent-soft) !important;
+  border-color: rgba(94, 106, 210, 0.38) !important;
+}
+
+.modal-choice-grid button span,
+.scope-list button span,
+.temporary-access-box p,
+.launch-review dd,
+.launch-review dt,
+.error-text {
+  color: var(--linear-muted);
+  font-size: 12px;
+}
+
+.temporary-access-box {
+  background: var(--linear-surface-2);
+  border: 1px solid var(--linear-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.launch-review dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.launch-review dl div {
+  display: grid;
+  gap: 2px;
+}
+
+.error-text {
+  color: var(--linear-red) !important;
+}
+
+@media (max-width: 980px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .app-sidebar {
+    height: auto;
+    position: relative;
+  }
+
+  .app-main {
+    padding: 24px 16px 40px;
+  }
+
+  .simple-dashboard-header,
+  .app-page-header,
+  .page-header,
+  .audit-report-topbar,
+  .simple-main-grid,
+  .dashboard-lower-grid,
+  .report-findings-layout,
+  .simple-stat-grid,
+  .simple-audit-facts,
+  .modal-choice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .simple-header-actions,
+  .hero-actions {
+    justify-content: flex-start;
+  }
+
+  .audit-table-row,
+  .finding-mini-row,
+  .export-mini-row,
+  .agent-row,
+  .github-issue-row,
+  .evidence-thumb {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .github-issue-filters,
+  .github-issue-side {
+    justify-content: flex-start;
+  }
+}
+
+/* Audit detail refinement: right-panel spacing and selected export count. */
+.app-shell .audit-action-buttons .github-export-button span {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  margin-left: 2px !important;
+  padding: 2px 7px !important;
+}
+
+.app-shell .issue-preview-panel {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.app-shell .issue-preview-header {
+  border-bottom: 1px solid var(--linear-border) !important;
+  padding: 16px 18px 14px !important;
+}
+
+.app-shell .issue-preview-title-line {
+  align-items: start !important;
+  display: grid !important;
+  gap: 10px !important;
+  grid-template-columns: 12px minmax(0, 1fr) !important;
+}
+
+.app-shell .issue-preview-title-line .signal-dot {
+  margin-top: 7px !important;
+}
+
+.app-shell .issue-preview-header h2 {
+  color: var(--linear-text) !important;
+  font-size: 16px !important;
+  line-height: 1.35 !important;
+  margin: 0 0 4px !important;
+}
+
+.app-shell .issue-preview-header p {
+  color: var(--linear-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  margin: 0 !important;
+}
+
+.app-shell .issue-preview-panel .evidence-shot {
+  border-left: 0 !important;
+  border-radius: 0 !important;
+  border-right: 0 !important;
+  margin: 0 !important;
+}
+
+.app-shell .issue-body {
+  gap: 0 !important;
+  padding: 0 !important;
+}
+
+.app-shell .issue-body section {
+  background: #ffffff !important;
+  border-bottom: 1px solid var(--linear-border-soft) !important;
+  border-radius: 0 !important;
+  padding: 18px !important;
+}
+
+.app-shell .issue-body section:last-child {
+  border-bottom: 0 !important;
+}
+
+.app-shell .issue-body h3 {
+  color: var(--linear-text-2) !important;
+  font-size: 12px !important;
+  letter-spacing: 0 !important;
+  margin: 0 0 8px !important;
+  text-transform: uppercase !important;
+}
+
+.app-shell .issue-body p,
+.app-shell .issue-body li {
+  color: var(--linear-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+.app-shell .report-findings-layout {
+  gap: 18px !important;
+  grid-template-columns: minmax(0, 1.08fr) minmax(380px, 0.82fr) !important;
+}
+
+.app-shell .command-panel,
+.app-shell .hub-card,
+.app-shell .panel,
+.app-shell .card,
+.app-shell .audit-export-strip,
+.app-shell .report-status-strip,
+.app-shell .findings-feed-panel,
+.app-shell .issue-preview-panel,
+.app-shell .agent-activity-panel,
+.app-shell .technical-details,
+.app-shell .wizard-panel,
+.app-shell .live-audit-card,
+.app-shell .dashboard-error,
+.app-shell .settings-panel,
+.app-shell .billing-card,
+.app-shell .command-metric-card {
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  color: var(--linear-text) !important;
+}
+
+.app-shell .audit-table-row,
+.app-shell .finding-mini-row,
+.app-shell .export-mini-row,
+.app-shell .agent-row,
+.app-shell .evidence-thumb,
+.app-shell .finding-feed-card,
+.app-shell .agent-activity-card,
+.app-shell .mission-row,
+.app-shell .github-issue-row,
+.app-shell .repo-row {
+  background: var(--linear-surface) !important;
+  border-bottom: 1px solid var(--linear-border) !important;
+  color: var(--linear-text) !important;
+}
+
+.app-shell .audit-table-row:hover,
+.app-shell .finding-mini-row:hover,
+.app-shell .export-mini-row:hover,
+.app-shell .agent-row:hover,
+.app-shell .evidence-thumb:hover,
+.app-shell .finding-feed-card:hover,
+.app-shell .finding-feed-card.active,
+.app-shell .github-issue-row:hover,
+.app-shell .repo-row:hover,
+.app-shell .command-metric-card:hover {
+  background: var(--linear-surface-hover) !important;
+  border-color: var(--linear-border-strong) !important;
+}
+
+/* Final Linear app cleanup: keep the product app one quiet system. */
+.app-shell {
+  --linear-bg: #f7f8fa;
+  --linear-sidebar: #f4f5f6;
+  --linear-surface: #ffffff;
+  --linear-surface-2: #f1f2f4;
+  --linear-surface-hover: #f6f7f8;
+  --linear-border: #dcdee3;
+  --linear-border-strong: #cfd3d8;
+  --linear-text: #1f2328;
+  --linear-text-2: #3f444b;
+  --linear-muted: #727780;
+  --linear-soft: #9ba1aa;
+  --linear-accent: #5e6ad2;
+  --linear-accent-hover: #4f5bc6;
+  --linear-accent-soft: rgba(94, 106, 210, 0.1);
+  grid-template-columns: 275px minmax(0, 1fr);
+}
+
+.app-sidebar {
+  background: var(--linear-sidebar) !important;
+  padding: 18px 16px !important;
+}
+
+.app-brand {
+  gap: 10px;
+  margin-bottom: 30px;
+  padding: 4px 6px;
+}
+
+.brand-mark {
+  background: #5e6ad2 !important;
+  border-radius: 5px;
+  color: #ffffff !important;
+  font-size: 11px;
+  height: 20px;
+  width: 20px;
+}
+
+.app-brand strong {
+  font-weight: 650;
+}
+
+.app-nav {
+  gap: 22px;
+}
+
+.app-nav-group > span {
+  color: #6f747c !important;
+  font-size: 12px;
+  padding-bottom: 6px;
+}
+
+.app-nav a {
+  border-radius: 6px;
+  color: #2f343a !important;
+  font-size: 14px;
+  gap: 11px;
+  min-height: 32px;
+  padding: 5px 8px;
+}
+
+.app-nav a:hover {
+  background: rgba(31, 35, 40, 0.06) !important;
+}
+
+.app-main {
+  background: var(--linear-bg) !important;
+  padding: 26px 28px 64px !important;
+}
+
+.simple-dashboard-header,
+.simple-dashboard,
+.app-page-header,
+.page-header,
+.audit-report-topbar,
+.app-shell .app-page,
+.app-shell .app-page.compact,
+.app-shell .detail-page,
+.app-shell .report-page,
+.github-issues-shell,
+.dashboard-error,
+.dashboard-skeleton {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+  max-width: 1280px !important;
+  width: 100% !important;
+}
+
+.simple-dashboard-header,
+.app-page-header,
+.page-header,
+.audit-report-topbar {
+  align-items: start;
+  margin-bottom: 18px !important;
+  min-height: 70px;
+}
+
+.simple-dashboard-header h1,
+.app-page-header h1,
+.page-header h1,
+.audit-report-topbar h1 {
+  font-size: 24px !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.01em;
+}
+
+.simple-dashboard-header p:not(.workspace-kicker),
+.app-page-header p,
+.page-header p,
+.audit-report-topbar p {
+  max-width: 620px;
+}
+
+.new-test-button,
+.cta-button,
+.button,
+.primary-report-action,
+.app-shell button.new-test-button,
+.app-shell a.new-test-button {
+  background: var(--linear-accent) !important;
+  border-color: var(--linear-accent) !important;
+  border-radius: 6px !important;
+  min-height: 32px !important;
+  padding: 0 12px !important;
+}
+
+.new-test-button .linear-icon,
+.primary-report-action .linear-icon,
+.cta-button .linear-icon,
+.button .linear-icon {
+  color: #ffffff !important;
+}
+
+.simple-dashboard {
+  gap: 12px !important;
+}
+
+.live-audit-card {
+  gap: 16px !important;
+  min-height: auto !important;
+  padding: 14px 16px !important;
+}
+
+.live-audit-head {
+  min-height: 62px;
+}
+
+.simple-progress-row span,
+.usage-meter i {
+  height: 5px !important;
+}
+
+.simple-audit-facts {
+  gap: 8px !important;
+}
+
+.simple-audit-facts div {
+  min-height: 64px;
+  padding: 10px 12px !important;
+}
+
+.simple-stat-grid {
+  gap: 10px !important;
+}
+
+.command-metric-card {
+  min-height: 58px !important;
+  padding: 10px 12px !important;
+}
+
+.metric-icon {
+  background: var(--linear-surface-2) !important;
+  height: 26px !important;
+  width: 26px !important;
+}
+
+.metric-copy strong {
+  font-size: 18px !important;
+}
+
+.simple-main-grid {
+  align-items: start;
+  grid-template-columns: minmax(0, 1.25fr) minmax(380px, 0.95fr) !important;
+}
+
+.command-panel,
+.hub-card,
+.panel,
+.card,
+.audit-export-strip,
+.report-status-strip,
+.findings-feed-panel,
+.issue-preview-panel,
+.agent-activity-panel,
+.technical-details,
+.wizard-panel,
+.live-audit-card,
+.dashboard-error,
+.settings-panel,
+.billing-card,
+.github-issues-list {
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px !important;
+}
+
+.panel-head,
+.github-issues-list-head {
+  background: var(--linear-surface-2) !important;
+  min-height: 42px !important;
+  padding: 9px 14px !important;
+}
+
+.audit-table-row {
+  grid-template-columns: minmax(0, 1.3fr) 100px 100px 105px 60px !important;
+}
+
+.finding-mini-row {
+  grid-template-columns: auto minmax(0, 1fr) minmax(180px, auto) !important;
+}
+
+.export-mini-row {
+  grid-template-columns: minmax(0, 1fr) minmax(118px, auto) minmax(110px, auto) !important;
+}
+
+.github-issue-row {
+  grid-template-columns: auto minmax(0, 1fr) minmax(210px, auto) !important;
+  min-height: 58px !important;
+}
+
+.severity-dot,
+.issue-state-dot,
+.repo-state-dot,
+.github-open-icon {
+  display: none !important;
+}
+
+.severity-badge,
+.severity-pill,
+.severity-tag,
+.github-label {
+  background: var(--linear-surface-2) !important;
+  border: 1px solid var(--linear-border) !important;
+  color: var(--linear-text-2) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 20px !important;
+  min-height: 20px !important;
+  padding: 0 8px !important;
+  text-transform: lowercase !important;
+}
+
+.severity-badge.severity-critical,
+.severity-badge.severity-high,
+.severity-badge.severity-medium,
+.severity-badge.severity-low,
+.severity-pill.critical,
+.severity-pill.high,
+.severity-pill.medium,
+.severity-pill.low,
+.severity-tag.critical,
+.severity-tag.high,
+.severity-tag.medium,
+.severity-tag.low,
+.github-label.label-critical,
+.github-label.label-high,
+.github-label.label-medium,
+.github-label.label-low {
+  color: var(--linear-text-2) !important;
+}
+
+.github-issues-shell {
+  display: grid;
+  gap: 10px;
+}
+
+.github-issues-toolbar {
+  margin-bottom: 0 !important;
+}
+
+.github-issues-list-head {
+  grid-template-columns: auto auto minmax(0, 1fr) !important;
+}
+
+.github-issue-title-line {
+  align-items: center;
+  gap: 6px !important;
+}
+
+.github-issue-summary {
+  white-space: normal !important;
+}
+
+.report-status-strip {
+  display: grid !important;
+  gap: 0 !important;
+  grid-template-columns: repeat(4, minmax(120px, 1fr)) minmax(280px, 1.4fr) !important;
+  margin: 12px 0 !important;
+  padding: 0 !important;
+}
+
+.report-status-strip > div {
+  background: transparent !important;
+  border: 0 !important;
+  border-right: 1px solid var(--linear-border) !important;
+  min-height: 62px !important;
+  padding: 12px 14px !important;
+}
+
+.report-status-strip > div:last-child {
+  border-right: 0 !important;
+}
+
+.report-status-strip strong {
+  color: var(--linear-text) !important;
+  font-size: 16px !important;
+}
+
+.mini-progress-rail {
+  align-items: center;
+  display: flex !important;
+  gap: 8px !important;
+}
+
+.mini-progress-rail span {
+  background: transparent !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 999px !important;
+  color: var(--linear-muted) !important;
+  font-size: 12px !important;
+  padding: 2px 8px !important;
+}
+
+.mini-progress-rail span.active {
+  background: var(--linear-accent-soft) !important;
+  border-color: rgba(94, 106, 210, 0.18) !important;
+  color: var(--linear-accent) !important;
+}
+
+.report-findings-layout {
+  align-items: start;
+  grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.85fr) !important;
+}
+
+.finding-feed-card {
+  align-items: start !important;
+  grid-template-columns: auto minmax(80px, auto) minmax(0, 1fr) !important;
+  min-height: 86px !important;
+  padding: 12px 14px !important;
+}
+
+.finding-feed-card.active {
+  background: var(--linear-surface-hover) !important;
+}
+
+.finding-feed-body h3 {
+  color: var(--linear-text) !important;
+  font-size: 14px !important;
+  margin: 0 0 4px !important;
+}
+
+.finding-feed-body p,
+.finding-meta-row span,
+.issue-body p,
+.issue-body li {
+  color: var(--linear-muted) !important;
+}
+
+.evidence-shot,
+.real-evidence-unavailable {
+  background: var(--linear-surface-2) !important;
+  border: 1px solid var(--linear-border) !important;
+  color: var(--linear-text) !important;
+}
+
+.evidence-shot::before,
+.marker-circle,
+.marker-note {
+  display: none !important;
+}
+
+.real-evidence-unavailable strong,
+.real-evidence-unavailable span,
+.real-evidence-unavailable p {
+  color: var(--linear-text-2) !important;
+}
+
+.real-evidence-unavailable .linear-icon {
+  color: var(--linear-muted) !important;
+}
+
+.auth-page {
+  --linear-bg: #f7f8fa;
+  --linear-sidebar: #f4f5f6;
+  --linear-surface: #ffffff;
+  --linear-surface-2: #f1f2f4;
+  --linear-surface-hover: #f6f7f8;
+  --linear-border: #dcdee3;
+  --linear-border-strong: #cfd3d8;
+  --linear-text: #1f2328;
+  --linear-text-2: #3f444b;
+  --linear-muted: #727780;
+  --linear-accent: #5e6ad2;
+  --linear-accent-hover: #4f5bc6;
+  background: var(--linear-bg) !important;
+  display: grid !important;
+  min-height: calc(100vh - 64px) !important;
+  padding: 48px 28px !important;
+  place-items: start center !important;
+}
+
+.auth-page::before,
+.auth-page::after {
+  display: none !important;
+}
+
+.auth-card {
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 10px !important;
+  color: var(--linear-text) !important;
+  max-width: 460px !important;
+  padding: 24px !important;
+}
+
+.auth-card h1,
+.auth-card p,
+.auth-form label,
+.auth-session strong,
+.auth-session span {
+  color: var(--linear-text) !important;
+}
+
+.auth-input,
+.auth-alert,
+.auth-session {
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 6px !important;
+  color: var(--linear-text) !important;
+}
+
+.auth-input .linear-icon,
+.auth-alert .linear-icon,
+.auth-session .linear-icon {
+  color: var(--linear-muted) !important;
+  filter: none !important;
+}
+
+.auth-input input {
+  color: var(--linear-text) !important;
+}
+
+.auth-tabs {
+  background: var(--linear-surface-2) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px !important;
+  padding: 3px !important;
+}
+
+.auth-tabs button {
+  background: transparent !important;
+  color: var(--linear-muted) !important;
+}
+
+.auth-tabs button.active {
+  background: var(--linear-surface) !important;
+  color: var(--linear-text) !important;
+}
+
+.dashboard-skeleton {
+  gap: 0 !important;
+}
+
+.dashboard-skeleton span {
+  animation: linearPulse 1.4s ease-in-out infinite !important;
+  background: linear-gradient(90deg, var(--linear-surface-2), #ffffff, var(--linear-surface-2)) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 0 !important;
+  height: 44px !important;
+}
+
+.dashboard-skeleton span:first-child {
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.dashboard-skeleton span:last-child {
+  border-radius: 0 0 8px 8px !important;
+}
+
+@media (max-width: 960px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .app-sidebar {
+    height: auto;
+    position: static;
+  }
+
+  .simple-dashboard-header,
+  .app-page-header,
+  .page-header,
+  .audit-report-topbar,
+  .simple-main-grid,
+  .report-findings-layout,
+  .report-status-strip {
+    grid-template-columns: 1fr !important;
+  }
+
+  .report-status-strip > div {
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--linear-border) !important;
+  }
+}
+
+/* Linear app composition pass: spacing, content position, agents, and status chips. */
+.app-shell .app-main {
+  padding: 36px 48px 72px !important;
+}
+
+.app-shell .simple-dashboard,
+.app-shell .simple-dashboard-header,
+.app-shell .app-content-stack {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+  max-width: 1180px !important;
+  width: 100% !important;
+}
+
+.app-shell .app-content-stack,
+.app-shell .simple-dashboard {
+  display: grid !important;
+  gap: 18px !important;
+}
+
+.app-shell .simple-dashboard-header,
+.app-shell .app-page-header {
+  align-items: start !important;
+  display: grid !important;
+  gap: 18px !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  margin-bottom: 8px !important;
+  padding-top: 2px !important;
+}
+
+.app-shell .simple-dashboard-header h1,
+.app-shell .app-page-header h1 {
+  color: var(--linear-text) !important;
+  font-size: 24px !important;
+  letter-spacing: 0 !important;
+  line-height: 1.25 !important;
+  margin: 3px 0 6px !important;
+}
+
+.app-shell .simple-dashboard-header p,
+.app-shell .app-page-header p {
+  color: var(--linear-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  margin: 0 !important;
+  max-width: 720px !important;
+}
+
+.app-shell .command-panel,
+.app-shell .live-audit-card,
+.app-shell .command-metric-card,
+.app-shell .github-issues-list {
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+.app-shell .live-audit-card {
+  display: grid !important;
+  gap: 18px !important;
+  min-height: 180px !important;
+  padding: 18px 20px !important;
+}
+
+.app-shell .empty-live-card {
+  align-items: center !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  min-height: 144px !important;
+}
+
+.app-shell .live-audit-head {
+  align-items: start !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+}
+
+.app-shell .simple-progress-row {
+  align-items: center !important;
+  display: grid !important;
+  gap: 12px !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+}
+
+.app-shell .simple-progress-row > span {
+  background: #e6e8ec !important;
+  border-radius: 999px !important;
+  height: 5px !important;
+  overflow: hidden !important;
+}
+
+.app-shell .simple-progress-row b {
+  background: var(--linear-accent) !important;
+  border-radius: inherit !important;
+  display: block !important;
+  height: 100% !important;
+}
+
+.app-shell .simple-audit-facts,
+.app-shell .simple-stat-grid {
+  display: grid !important;
+  gap: 12px !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.app-shell .simple-audit-facts > div {
+  background: var(--linear-surface-2) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 7px !important;
+  min-height: 58px !important;
+  padding: 12px !important;
+}
+
+.app-shell .command-metric-card {
+  align-items: center !important;
+  display: flex !important;
+  gap: 12px !important;
+  min-height: 70px !important;
+  padding: 14px !important;
+}
+
+.app-shell .metric-icon {
+  align-items: center !important;
+  background: var(--linear-surface-2) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 7px !important;
+  display: inline-flex !important;
+  height: 28px !important;
+  justify-content: center !important;
+  width: 28px !important;
+}
+
+.app-shell .metric-copy {
+  display: grid !important;
+  gap: 1px !important;
+}
+
+.app-shell .metric-copy strong,
+.app-shell .command-metric-card .metric {
+  color: var(--linear-text) !important;
+  font-size: 20px !important;
+  line-height: 1.1 !important;
+}
+
+.app-shell .dashboard-work-grid {
+  align-items: start !important;
+  display: grid !important;
+  gap: 14px !important;
+  grid-template-areas:
+    "audits agents"
+    "audits findings" !important;
+  grid-template-columns: minmax(0, 1.18fr) minmax(360px, 0.82fr) !important;
+}
+
+.app-shell .dashboard-top-grid {
+  align-items: stretch !important;
+  display: grid !important;
+  gap: 14px !important;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.42fr) !important;
+}
+
+.app-shell .github-dashboard-card {
+  align-content: start !important;
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px !important;
+  color: var(--linear-text) !important;
+  display: grid !important;
+  gap: 12px !important;
+  min-height: 148px !important;
+  padding: 14px !important;
+}
+
+.app-shell .github-dashboard-card.connected {
+  border-color: rgba(35, 134, 54, 0.28) !important;
+}
+
+.app-shell .github-dashboard-card-head {
+  align-items: center !important;
+  display: flex !important;
+  gap: 10px !important;
+}
+
+.app-shell .github-dashboard-card-head > span {
+  align-items: center !important;
+  background: var(--linear-surface-2) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 7px !important;
+  display: inline-flex !important;
+  height: 30px !important;
+  justify-content: center !important;
+  width: 30px !important;
+}
+
+.app-shell .github-dashboard-card.connected .github-dashboard-card-head > span {
+  background: #dafbe1 !important;
+  border-color: #aceebb !important;
+}
+
+.app-shell .github-dashboard-card.connected .github-dashboard-card-head .linear-icon {
+  color: #116329 !important;
+}
+
+.app-shell .github-dashboard-card strong {
+  color: var(--linear-text) !important;
+  font-size: 15px !important;
+  line-height: 1.25 !important;
+}
+
+.app-shell .github-dashboard-card p,
+.app-shell .github-dashboard-card small {
+  color: var(--linear-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  margin: 0 !important;
+}
+
+.app-shell .github-dashboard-card small {
+  font-size: 12px !important;
+}
+
+.app-shell .github-dashboard-card .new-test-button,
+.app-shell .github-dashboard-card .panel-link {
+  justify-self: start !important;
+}
+
+.app-shell .simple-dashboard.is-loading .command-panel,
+.app-shell .simple-dashboard.is-loading .live-audit-card,
+.app-shell .simple-dashboard.is-loading .command-metric-card,
+.app-shell .simple-dashboard.is-loading .github-dashboard-card {
+  opacity: 0.78 !important;
+}
+
+.app-shell .recent-audits-card {
+  grid-area: audits !important;
+}
+
+.app-shell .dashboard-agents-card {
+  grid-area: agents !important;
+}
+
+.app-shell .dashboard-work-grid #recent-findings {
+  grid-area: findings !important;
+}
+
+.app-shell .panel-head {
+  align-items: center !important;
+  background: var(--linear-surface-2) !important;
+  border-bottom: 1px solid var(--linear-border) !important;
+  display: flex !important;
+  gap: 16px !important;
+  justify-content: space-between !important;
+  margin: 0 !important;
+  padding: 12px 14px !important;
+}
+
+.app-shell .command-panel > .panel-head:first-child {
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.app-shell .panel-head h2 {
+  color: var(--linear-text) !important;
+  font-size: 15px !important;
+  line-height: 1.25 !important;
+  margin: 2px 0 0 !important;
+}
+
+.app-shell .compact-list,
+.app-shell .audit-table,
+.app-shell .finding-list,
+.app-shell .agent-compact-list {
+  display: grid !important;
+  gap: 0 !important;
+}
+
+.app-shell .audit-table-row,
+.app-shell .finding-mini-row,
+.app-shell .export-mini-row,
+.app-shell .agent-compact-row {
+  align-items: center !important;
+  background: var(--linear-surface) !important;
+  border-bottom: 1px solid var(--linear-border-soft) !important;
+  color: var(--linear-text) !important;
+  min-height: 48px !important;
+  padding: 10px 14px !important;
+  text-decoration: none !important;
+}
+
+.app-shell .audit-table-row:last-child,
+.app-shell .finding-mini-row:last-child,
+.app-shell .export-mini-row:last-child,
+.app-shell .agent-compact-row:last-child {
+  border-bottom: 0 !important;
+}
+
+.app-shell .audit-table-row {
+  display: grid !important;
+  gap: 14px !important;
+  grid-template-columns: minmax(220px, 1.4fr) 90px 100px 80px 54px !important;
+}
+
+.app-shell .finding-mini-row {
+  display: grid !important;
+  gap: 12px !important;
+  grid-template-columns: 74px minmax(0, 1fr) minmax(150px, 0.8fr) !important;
+}
+
+.app-shell .finding-row-main {
+  display: grid !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+}
+
+.app-shell .finding-row-main strong,
+.app-shell .audit-table-row strong,
+.app-shell .github-issue-main strong,
+.app-shell .agent-compact-row strong,
+.app-shell .export-mini-row strong {
+  color: var(--linear-text) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.app-shell .finding-row-main span,
+.app-shell .finding-mini-row em,
+.app-shell .audit-table-row span,
+.app-shell .audit-table-row em,
+.app-shell .agent-compact-row em,
+.app-shell .export-mini-row em,
+.app-shell .export-mini-row span {
+  color: var(--linear-muted) !important;
+  font-size: 12px !important;
+  font-style: normal !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.app-shell .agent-compact-row {
+  display: grid !important;
+  gap: 10px !important;
+  grid-template-columns: 18px minmax(0, 1fr) auto !important;
+}
+
+.app-shell .agent-compact-row .linear-icon {
+  height: 16px !important;
+  width: 16px !important;
+}
+
+.app-shell .agent-compact-row > span {
+  display: grid !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+}
+
+.app-shell .agent-status-chip,
+.app-shell .github-label,
+.app-shell .severity-badge,
+.app-shell .severity-pill {
+  --chip-bg: #f1f2f4;
+  --chip-border: #d8dee4;
+  --chip-text: #656d76;
+  align-items: center !important;
+  background: var(--chip-bg) !important;
+  border: 1px solid var(--chip-border) !important;
+  border-radius: 999px !important;
+  color: var(--chip-text) !important;
+  display: inline-flex !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  height: 22px !important;
+  justify-content: center !important;
+  letter-spacing: 0 !important;
+  line-height: 1 !important;
+  padding: 0 9px !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+}
+
+.app-shell .chip-green {
+  --chip-bg: #e9f8ee;
+  --chip-border: #c9ead3;
+  --chip-text: #1a7f37;
+}
+
+.app-shell .chip-purple {
+  --chip-bg: #f0efff;
+  --chip-border: #dad7ff;
+  --chip-text: #5e6ad2;
+}
+
+.app-shell .chip-amber,
+.app-shell .chip-yellow {
+  --chip-bg: #fff8d7;
+  --chip-border: #f0d98c;
+  --chip-text: #9a6700;
+}
+
+.app-shell .chip-orange {
+  --chip-bg: #fff1e8;
+  --chip-border: #ffd7bd;
+  --chip-text: #bc4c00;
+}
+
+.app-shell .github-issues-shell {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.app-shell .github-filter-input {
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 7px !important;
+  display: flex !important;
+  height: 36px !important;
+  padding: 0 10px !important;
+}
+
+.app-shell .github-issues-list-head {
+  background: var(--linear-surface-2) !important;
+  border-bottom: 1px solid var(--linear-border) !important;
+  display: grid !important;
+  gap: 12px !important;
+  grid-template-columns: auto auto minmax(0, 1fr) !important;
+  min-height: 44px !important;
+  padding: 0 14px !important;
+}
+
+.app-shell .github-issue-row {
+  align-items: start !important;
+  display: grid !important;
+  gap: 14px !important;
+  grid-template-columns: auto minmax(0, 1fr) minmax(240px, 0.45fr) !important;
+  min-height: 74px !important;
+  padding: 12px 14px !important;
+}
+
+.app-shell .github-issue-title-line {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+.app-shell .github-issue-side {
+  align-items: end !important;
+  display: grid !important;
+  gap: 6px !important;
+  justify-items: end !important;
+}
+
+.app-shell .github-layout-grid {
+  align-items: start !important;
+  display: grid !important;
+  gap: 14px !important;
+  grid-template-columns: minmax(340px, 0.85fr) minmax(520px, 1.15fr) !important;
+}
+
+.app-shell .github-layout-grid .command-panel {
+  min-height: 0 !important;
+}
+
+.app-shell .export-mini-row {
+  display: grid !important;
+  gap: 12px !important;
+  grid-template-columns: minmax(0, 1fr) auto minmax(120px, auto) !important;
+}
+
+.app-shell .status-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.app-shell .status-list li {
+  align-items: center !important;
+  border-bottom: 1px solid var(--linear-border-soft) !important;
+  display: grid !important;
+  gap: 16px !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  min-height: 44px !important;
+  padding: 10px 14px !important;
+}
+
+.app-shell .status-list li:last-child {
+  border-bottom: 0 !important;
+}
+
+.app-shell .toolbar {
+  align-items: center !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  padding: 14px !important;
+}
+
+.app-shell .toolbar .input {
+  flex: 1 1 280px !important;
+  min-height: 34px !important;
+}
+
+.app-shell .app-section-gap {
+  margin-top: 0 !important;
+}
+
+.app-shell .new-test-button {
+  align-items: center !important;
+  background: var(--linear-accent) !important;
+  border: 1px solid var(--linear-accent) !important;
+  border-radius: 7px !important;
+  color: #ffffff !important;
+  display: inline-flex !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  gap: 6px !important;
+  height: 34px !important;
+  justify-content: center !important;
+  padding: 0 12px !important;
+}
+
+.app-shell .new-test-button .linear-icon {
+  filter: brightness(0) invert(1) !important;
+  opacity: 0.9 !important;
+}
+
+.app-shell .ghost-button.compact {
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 7px !important;
+  color: var(--linear-text-2) !important;
+  min-height: 32px !important;
+}
+
+.app-shell .dashboard-skeleton {
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px !important;
+  display: grid !important;
+  overflow: hidden !important;
+}
+
+.app-shell .dashboard-skeleton span {
+  border: 0 !important;
+  border-bottom: 1px solid var(--linear-border-soft) !important;
+  border-radius: 0 !important;
+}
+
+.app-shell .dashboard-skeleton span:last-child {
+  border-bottom: 0 !important;
+}
+
+@media (max-width: 1120px) {
+  .app-shell .dashboard-work-grid,
+  .app-shell .github-layout-grid,
+  .app-shell .simple-audit-facts,
+  .app-shell .simple-stat-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .app-shell .dashboard-work-grid {
+    grid-template-areas:
+      "agents"
+      "findings"
+      "audits" !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell .app-main {
+    padding: 24px 16px 56px !important;
+  }
+
+  .app-shell .simple-dashboard-header,
+  .app-shell .app-page-header,
+  .app-shell .empty-live-card,
+  .app-shell .live-audit-head,
+  .app-shell .github-issue-row,
+  .app-shell .finding-mini-row,
+  .app-shell .audit-table-row,
+  .app-shell .export-mini-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .app-shell .github-issue-side {
+    justify-items: start !important;
+  }
+}
+
+/* Bright compact status dots requested for agent state and finding severity. */
+.app-shell .signal-dot,
+.app-shell .agent-state-dot {
+  border-radius: 999px !important;
+  display: inline-block !important;
+  flex: 0 0 auto !important;
+  height: 10px !important;
+  padding: 0 !important;
+  width: 10px !important;
+}
+
+.app-shell .signal-dot {
+  box-shadow: 0 0 0 3px rgba(31, 35, 40, 0.04), 0 0 10px rgba(31, 35, 40, 0.12) !important;
+}
+
+.app-shell .signal-weak {
+  background: #ffcc00 !important;
+  border: 1px solid #d9a400 !important;
+}
+
+.app-shell .signal-warning {
+  background: #ff7a00 !important;
+  border: 1px solid #d65f00 !important;
+}
+
+.app-shell .signal-danger {
+  background: #ff2d55 !important;
+  border: 1px solid #d7002f !important;
+}
+
+.app-shell .agent-state-dot.active {
+  background: #00c853 !important;
+  border: 1px solid #00a743 !important;
+  box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.12), 0 0 12px rgba(0, 200, 83, 0.35) !important;
+}
+
+.app-shell .agent-state-dot.inactive {
+  background: #ff1744 !important;
+  border: 1px solid #d5002d !important;
+  box-shadow: 0 0 0 3px rgba(255, 23, 68, 0.12), 0 0 12px rgba(255, 23, 68, 0.32) !important;
+}
+
+.app-shell .finding-mini-row {
+  grid-template-columns: 18px minmax(0, 1fr) minmax(150px, 0.8fr) !important;
+}
+
+.app-shell .finding-mini-row > .signal-dot {
+  justify-self: center !important;
+}
+
+.app-shell .agent-compact-row {
+  grid-template-columns: 18px minmax(0, 1fr) 18px !important;
+}
+
+.app-shell .agent-compact-row > .agent-state-dot,
+.app-shell .export-mini-row > .agent-state-dot {
+  justify-self: center !important;
+}
+
+.app-shell .github-issue-title-line > .signal-dot {
+  margin-top: 5px !important;
+}
+
+.app-shell .export-mini-row {
+  grid-template-columns: minmax(0, 1fr) 18px minmax(120px, auto) !important;
+}
+
+.app-shell .agent-list .agent-row {
+  align-items: center !important;
+  display: grid !important;
+  gap: 12px !important;
+  grid-template-columns: 18px minmax(90px, auto) 18px minmax(80px, auto) minmax(0, 1fr) !important;
+}
+
+.app-shell .evidence-thumb .signal-dot {
+  margin-top: 4px !important;
+}
+
+/* GitHub export controls and checkbox cleanup. */
+.app-shell input[type="checkbox"] {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  accent-color: #1a7f37 !important;
+  background: #ffffff !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 4px !important;
+  height: 14px !important;
+  margin: 0 !important;
+  position: relative !important;
+  width: 14px !important;
+}
+
+.app-shell input[type="checkbox"]:checked {
+  background: #1a7f37 !important;
+  border-color: #1a7f37 !important;
+}
+
+.app-shell input[type="checkbox"]:checked::after {
+  border: solid #ffffff !important;
+  border-width: 0 2px 2px 0 !important;
+  content: "" !important;
+  height: 7px !important;
+  left: 4px !important;
+  position: absolute !important;
+  top: 1px !important;
+  transform: rotate(45deg) !important;
+  width: 4px !important;
+}
+
+.app-shell .github-issue-check {
+  align-items: center !important;
+  display: inline-flex !important;
+  height: 20px !important;
+  justify-content: center !important;
+  width: 20px !important;
+}
+
+.app-shell .github-export-button,
+.app-shell button.github-export-button,
+.app-shell a.github-export-button {
+  align-items: center !important;
+  background: #1a7f37 !important;
+  border: 1px solid #1a7f37 !important;
+  border-radius: 7px !important;
+  color: #ffffff !important;
+  display: inline-flex !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  gap: 6px !important;
+  height: 34px !important;
+  justify-content: center !important;
+  padding: 0 12px !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+}
+
+.app-shell .github-export-button.compact {
+  font-size: 12px !important;
+  height: 30px !important;
+  padding: 0 10px !important;
+}
+
+.app-shell .github-export-button:hover:not(:disabled) {
+  background: #116329 !important;
+  border-color: #116329 !important;
+}
+
+.app-shell .github-export-button:disabled {
+  background: #94d3a2 !important;
+  border-color: #94d3a2 !important;
+  color: #ffffff !important;
+  cursor: not-allowed !important;
+}
+
+.app-shell .github-export-button .linear-icon {
+  background: #ffffff !important;
+  color: #ffffff !important;
+  filter: none !important;
+  opacity: 0.95 !important;
+}
+
+.app-shell .github-issue-row {
+  grid-template-columns: auto minmax(0, 1fr) minmax(260px, 0.5fr) !important;
+}
+
+.app-shell .github-issue-side {
+  align-content: start !important;
+  gap: 8px !important;
+}
+
+.app-shell .audit-report-topbar {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+  max-width: 1180px !important;
+  width: 100% !important;
+}
+
+.app-shell .audit-export-strip,
+.app-shell .report-status-strip,
+.app-shell .report-findings-layout,
+.app-shell .agent-activity-panel,
+.app-shell .technical-details {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+  max-width: 1180px !important;
+  width: 100% !important;
+}
+
+.app-shell .audit-export-strip {
+  align-items: center !important;
+  display: grid !important;
+  gap: 12px !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  min-height: auto !important;
+  padding: 12px 14px !important;
+}
+
+.app-shell .export-target {
+  align-items: center !important;
+  display: flex !important;
+  gap: 10px !important;
+}
+
+.app-shell .report-findings-layout {
+  display: grid !important;
+  gap: 14px !important;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.72fr) !important;
+}
+
+.app-shell .finding-feed-card {
+  grid-template-columns: 22px 18px minmax(0, 1fr) !important;
+}
+
+.app-shell .finding-feed-card .severity-tag {
+  align-self: center !important;
+  border-radius: 999px !important;
+  display: block !important;
+  flex: 0 0 10px !important;
+  font-size: 0 !important;
+  height: 10px !important;
+  max-height: 10px !important;
+  max-width: 10px !important;
+  min-height: 10px !important;
+  min-width: 10px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  width: 10px !important;
+}
+
+.app-shell .finding-feed-card .severity-tag.low,
+.app-shell .finding-feed-card .severity-tag.info {
+  background: #ffcc00 !important;
+  border: 1px solid #d9a400 !important;
+}
+
+.app-shell .finding-feed-card .severity-tag.medium {
+  background: #ff7a00 !important;
+  border: 1px solid #d65f00 !important;
+}
+
+.app-shell .finding-feed-card .severity-tag.high,
+.app-shell .finding-feed-card .severity-tag.critical {
+  background: #ff2d55 !important;
+  border: 1px solid #d7002f !important;
+}
+
+.app-shell .github-export-modal {
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 16px 44px rgba(31, 35, 40, 0.18) !important;
+  color: var(--linear-text) !important;
+  display: grid !important;
+  max-width: 520px !important;
+  overflow: hidden !important;
+  width: min(calc(100vw - 32px), 520px) !important;
+}
+
+.app-shell .github-export-modal header,
+.app-shell .github-export-modal footer {
+  align-items: center !important;
+  background: var(--linear-surface-2) !important;
+  border-color: var(--linear-border) !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  padding: 14px 16px !important;
+}
+
+.app-shell .github-export-modal header {
+  border-bottom: 1px solid var(--linear-border) !important;
+}
+
+.app-shell .github-export-modal footer {
+  border-top: 1px solid var(--linear-border) !important;
+}
+
+.app-shell .github-export-modal h2 {
+  color: var(--linear-text) !important;
+  font-size: 18px !important;
+  line-height: 1.25 !important;
+  margin: 2px 0 0 !important;
+}
+
+.app-shell .github-export-modal header button {
+  background: transparent !important;
+  border: 0 !important;
+  color: var(--linear-muted) !important;
+  height: auto !important;
+  padding: 0 !important;
+}
+
+.app-shell .github-export-form {
+  display: grid !important;
+  gap: 14px !important;
+  padding: 16px !important;
+}
+
+.app-shell .github-export-form label {
+  color: var(--linear-text-2) !important;
+  display: grid !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  gap: 6px !important;
+}
+
+.app-shell .github-export-form select,
+.app-shell .github-export-form input:not([type="checkbox"]) {
+  background: #ffffff !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 7px !important;
+  color: var(--linear-text) !important;
+  font-size: 13px !important;
+  min-height: 34px !important;
+  padding: 0 10px !important;
+}
+
+.app-shell .github-export-form .checkbox-line {
+  align-items: center !important;
+  display: flex !important;
+  gap: 8px !important;
+}
+
+.app-shell .findings-feed-panel .report-section-heading {
+  background: var(--linear-surface) !important;
+  border-bottom: 1px solid var(--linear-border) !important;
+  padding: 16px 18px 14px !important;
+}
+
+.app-shell .findings-feed-panel .report-section-heading h2 {
+  font-size: 22px !important;
+  line-height: 1.2 !important;
+  margin: 4px 0 0 !important;
+}
+
+.app-shell .selection-controls {
+  gap: 8px !important;
+  padding-left: 12px !important;
+}
+
+.app-shell .selection-controls button {
+  height: 34px !important;
+  padding: 0 12px !important;
+}
+
+.app-shell .status-value-with-dot {
+  align-items: center !important;
+  display: inline-flex !important;
+  gap: 8px !important;
+}
+
+.app-shell .status-value-with-dot .agent-state-dot {
+  height: 9px !important;
+  width: 9px !important;
+}
+
+.app-shell .agent-activity-panel {
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.app-shell .agent-activity-panel > .report-section-heading {
+  background: var(--linear-surface) !important;
+  border-bottom: 1px solid var(--linear-border) !important;
+  padding: 16px 18px !important;
+}
+
+.app-shell .agent-activity-panel > .report-section-heading h2 {
+  font-size: 20px !important;
+  line-height: 1.25 !important;
+  margin: 4px 0 0 !important;
+}
+
+.app-shell .agent-activity-grid {
+  display: grid !important;
+  gap: 0 !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.app-shell .agent-activity-card {
+  background: #ffffff !important;
+  border: 0 !important;
+  border-right: 1px solid var(--linear-border-soft) !important;
+  border-bottom: 1px solid var(--linear-border-soft) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  display: grid !important;
+  gap: 12px !important;
+  grid-template-columns: 32px minmax(0, 1fr) !important;
+  min-height: 150px !important;
+  padding: 20px 18px !important;
+}
+
+.app-shell .agent-activity-card:nth-child(3n) {
+  border-right: 0 !important;
+}
+
+.app-shell .technical-details {
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.app-shell .technical-details summary {
+  align-items: center !important;
+  background: var(--linear-surface-2) !important;
+  border-bottom: 1px solid var(--linear-border) !important;
+  color: var(--linear-text) !important;
+  cursor: pointer !important;
+  display: grid !important;
+  gap: 3px !important;
+  list-style: none !important;
+  padding: 14px 18px !important;
+}
+
+.app-shell .technical-details summary::-webkit-details-marker {
+  display: none !important;
+}
+
+.app-shell .technical-details summary span {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
+.app-shell .technical-details summary small,
+.app-shell .technical-details-intro {
+  color: var(--linear-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+.app-shell .technical-details-intro {
+  border-bottom: 1px solid var(--linear-border-soft) !important;
+  margin: 0 !important;
+  padding: 14px 18px !important;
+}
+
+.app-shell .technical-details > .panel {
+  border: 0 !important;
+  border-bottom: 1px solid var(--linear-border-soft) !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 18px !important;
+}
+
+.app-shell .technical-details > .panel:last-child {
+  border-bottom: 0 !important;
+}
+
+.app-shell .technical-details .status-list li {
+  min-height: 36px !important;
+  padding: 8px 0 !important;
+}
+
+.app-shell .technical-details .panel h2 {
+  font-size: 17px !important;
+  margin: 0 0 12px !important;
+}
+
+@media (max-width: 980px) {
+  .app-shell .report-findings-layout,
+  .app-shell .github-issue-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .app-shell .github-issue-side {
+    justify-items: start !important;
+  }
+
+  .app-shell .agent-activity-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .app-shell .agent-activity-card {
+    border-right: 0 !important;
+  }
+}
+
+/* Findings triage preview. */
+.app-shell .findings-triage-layout {
+  align-items: start !important;
+  display: grid !important;
+  gap: 14px !important;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.42fr) !important;
+}
+
+.app-shell .findings-triage-layout .github-issues-list {
+  min-width: 0 !important;
+}
+
+.app-shell .findings-triage-layout .github-issue-row {
+  grid-template-columns: 22px minmax(0, 1fr) minmax(220px, 0.34fr) !important;
+}
+
+.app-shell .github-issue-row.selected {
+  background: var(--linear-surface-2) !important;
+  box-shadow: inset 3px 0 0 var(--linear-accent) !important;
+}
+
+.app-shell .github-issue-main {
+  background: transparent !important;
+  border: 0 !important;
+  color: var(--linear-text) !important;
+  cursor: pointer !important;
+  display: grid !important;
+  gap: 4px !important;
+  height: auto !important;
+  justify-content: stretch !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+  text-decoration: none !important;
+  width: 100% !important;
+}
+
+.app-shell .github-issue-main:hover,
+.app-shell .github-issue-main:focus-visible {
+  background: transparent !important;
+  color: var(--linear-text) !important;
+}
+
+.app-shell .finding-audit-preview {
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px !important;
+  color: var(--linear-text) !important;
+  overflow: hidden !important;
+  position: sticky !important;
+  top: 24px !important;
+}
+
+.app-shell .finding-audit-preview-head {
+  align-items: start !important;
+  background: var(--linear-surface-2) !important;
+  border-bottom: 1px solid var(--linear-border) !important;
+  display: flex !important;
+  gap: 12px !important;
+  justify-content: space-between !important;
+  padding: 14px 16px !important;
+}
+
+.app-shell .finding-audit-preview-head h2,
+.app-shell .finding-audit-preview-empty h2 {
+  color: var(--linear-text) !important;
+  font-size: 18px !important;
+  line-height: 1.25 !important;
+  margin: 3px 0 0 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.app-shell .finding-audit-preview-body,
+.app-shell .finding-audit-preview-empty {
+  display: grid !important;
+  gap: 14px !important;
+  padding: 16px !important;
+}
+
+.app-shell .selected-finding-summary {
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px !important;
+  display: grid !important;
+  gap: 8px !important;
+  padding: 12px !important;
+}
+
+.app-shell .selected-finding-title {
+  align-items: start !important;
+  display: grid !important;
+  gap: 8px !important;
+  grid-template-columns: 12px minmax(0, 1fr) !important;
+}
+
+.app-shell .selected-finding-title .signal-dot {
+  margin-top: 4px !important;
+}
+
+.app-shell .selected-finding-summary p,
+.app-shell .finding-audit-preview-empty p {
+  color: var(--linear-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  margin: 0 !important;
+}
+
+.app-shell .audit-preview-facts {
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px !important;
+  display: grid !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+.app-shell .audit-preview-facts div {
+  align-items: start !important;
+  border-bottom: 1px solid var(--linear-border-soft) !important;
+  display: grid !important;
+  gap: 12px !important;
+  grid-template-columns: 106px minmax(0, 1fr) !important;
+  padding: 10px 12px !important;
+}
+
+.app-shell .audit-preview-facts div:last-child {
+  border-bottom: 0 !important;
+}
+
+.app-shell .audit-preview-facts dt {
+  color: var(--linear-muted) !important;
+  font-size: 12px !important;
+  margin: 0 !important;
+}
+
+.app-shell .audit-preview-facts dd {
+  color: var(--linear-text) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.app-shell .audit-preview-link {
+  justify-self: start !important;
+}
+
+@media (max-width: 1120px) {
+  .app-shell .findings-triage-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .app-shell .finding-audit-preview {
+    position: static !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell .findings-triage-layout .github-issue-row {
+    grid-template-columns: 22px minmax(0, 1fr) !important;
+  }
+
+  .app-shell .findings-triage-layout .github-issue-side {
+    grid-column: 2 !important;
+  }
+}
+
+/* Audit history and GitHub readiness clarity. */
+.app-shell .audit-table-row {
+  grid-template-columns: minmax(0, 1.35fr) minmax(120px, auto) minmax(96px, auto) minmax(150px, auto) auto !important;
+  min-height: 58px !important;
+}
+
+.app-shell .audit-row-title {
+  display: grid !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+}
+
+.app-shell .audit-row-title em {
+  color: var(--linear-muted) !important;
+  font-size: 12px !important;
+  font-style: normal !important;
+  font-weight: 500 !important;
+}
+
+.app-shell .audit-status {
+  align-items: center !important;
+  color: var(--linear-text-2) !important;
+  display: inline-flex !important;
+  font-size: 12px !important;
+  gap: 8px !important;
+  justify-self: start !important;
+  text-transform: capitalize !important;
+}
+
+.app-shell .audit-status .agent-state-dot {
+  flex: 0 0 9px !important;
+}
+
+.app-shell .audit-status:not(.audit-status-completed):not(.audit-status-failed) .agent-state-dot {
+  background: #ffcc00 !important;
+  border: 1px solid #d9a400 !important;
+  border-radius: 999px !important;
+  height: 9px !important;
+  width: 9px !important;
+}
+
+.app-shell .audit-row-action {
+  align-items: center !important;
+  background: var(--linear-surface) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 6px !important;
+  color: var(--linear-accent) !important;
+  display: inline-flex !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+  height: 30px !important;
+  justify-self: end !important;
+  padding: 0 10px !important;
+  white-space: nowrap !important;
+}
+
+.app-shell .audit-table-row:hover .audit-row-action {
+  background: var(--linear-accent) !important;
+  border-color: var(--linear-accent) !important;
+  color: #ffffff !important;
+}
+
+.app-shell .github-layout-grid {
+  grid-template-columns: minmax(340px, 0.54fr) minmax(0, 1fr) !important;
+}
+
+.app-shell .github-layout-grid,
+.app-shell .github-issues-shell {
+  margin-left: 0 !important;
+}
+
+.app-shell .github-layout-grid {
+  align-items: start !important;
+  gap: 12px !important;
+  max-width: 1120px !important;
+  width: min(100%, 1120px) !important;
+}
+
+.app-shell .github-disconnect-button {
+  color: #cf222e !important;
+}
+
+.app-shell .github-disconnect-button:hover:not(:disabled) {
+  background: #ffebe9 !important;
+  border-color: #ffcecb !important;
+  color: #cf222e !important;
+}
+
+.app-shell .github-disconnect-button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.55 !important;
+}
+
+.app-shell .github-connection-card {
+  display: grid !important;
+  gap: 12px !important;
+  align-content: start !important;
+  padding: 16px !important;
+}
+
+.app-shell .github-connection-card.connected {
+  border-color: rgba(35, 134, 54, 0.28) !important;
+}
+
+.app-shell .github-connection-top {
+  align-items: center !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+.app-shell .github-connection-icon {
+  align-items: center !important;
+  background: var(--linear-surface-2) !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  height: 34px !important;
+  justify-content: center !important;
+  width: 34px !important;
+}
+
+.app-shell .github-connection-icon .linear-icon {
+  color: var(--linear-text-2) !important;
+}
+
+.app-shell .connection-badge,
+.app-shell .repo-readiness,
+.app-shell .repo-ready-count {
+  align-items: center !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+  min-height: 24px !important;
+  padding: 0 9px !important;
+  white-space: nowrap !important;
+}
+
+.app-shell .connection-badge {
+  background: #fff8c5 !important;
+  border: 1px solid #d4a72c !important;
+  color: #7d4e00 !important;
+}
+
+.app-shell .connection-badge.connected,
+.app-shell .repo-readiness-ready,
+.app-shell .repo-ready-count {
+  background: #dafbe1 !important;
+  border: 1px solid #aceebb !important;
+  color: #116329 !important;
+}
+
+.app-shell .repo-readiness-blocked {
+  background: #ffebe9 !important;
+  border: 1px solid #ffcecb !important;
+  color: #cf222e !important;
+}
+
+.app-shell .github-connection-card h2 {
+  color: var(--linear-text) !important;
+  font-size: 19px !important;
+  line-height: 1.25 !important;
+  margin: 0 !important;
+}
+
+.app-shell .github-connection-card p {
+  color: var(--linear-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  margin: 0 !important;
+}
+
+.app-shell .github-connection-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  margin-top: 2px !important;
+}
+
+.app-shell .repo-readiness-list {
+  display: grid !important;
+}
+
+.app-shell .repo-readiness-row {
+  align-items: center !important;
+  background: var(--linear-surface) !important;
+  border-bottom: 1px solid var(--linear-border) !important;
+  display: grid !important;
+  gap: 14px !important;
+  grid-template-columns: minmax(0, 1fr) minmax(112px, auto) minmax(120px, auto) !important;
+  min-height: 64px !important;
+  padding: 10px 14px !important;
+}
+
+.app-shell .repo-readiness-row:last-child {
+  border-bottom: 0 !important;
+}
+
+.app-shell .repo-readiness-row strong {
+  color: var(--linear-text) !important;
+  display: block !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.app-shell .repo-readiness-row p {
+  color: var(--linear-muted) !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  margin: 2px 0 0 !important;
+}
+
+.app-shell .repo-readiness-row em {
+  color: var(--linear-muted) !important;
+  font-size: 12px !important;
+  font-style: normal !important;
+  justify-self: end !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 980px) {
+  .app-shell .audit-table-row {
+    grid-template-columns: minmax(0, 1fr) minmax(120px, auto) !important;
+  }
+
+  .app-shell .audit-table-row > span:nth-child(3),
+  .app-shell .audit-table-row > span:nth-child(4) {
+    grid-column: 1 !important;
+  }
+
+  .app-shell .audit-row-action {
+    grid-column: 2 !important;
+    grid-row: 1 / span 3 !important;
+  }
+
+  .app-shell .github-layout-grid,
+  .app-shell .dashboard-top-grid,
+  .app-shell .repo-readiness-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .app-shell .repo-readiness-row em {
+    justify-self: start !important;
+  }
+}
+
+/* Final dot sizing pass: keep bright indicators, but prevent clipped circles. */
+.app-shell .signal-dot,
+.app-shell .agent-state-dot,
+.app-shell .severity-dot,
+.app-shell .issue-state-dot,
+.app-shell .repo-state-dot {
+  aspect-ratio: 1 / 1 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  flex: 0 0 6px !important;
+  height: 6px !important;
+  line-height: 0 !important;
+  margin: 0 !important;
+  max-height: 6px !important;
+  max-width: 6px !important;
+  min-height: 6px !important;
+  min-width: 6px !important;
+  outline: 0 !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  vertical-align: middle !important;
+  width: 6px !important;
+}
+
+.app-shell .github-issue-title-line > .signal-dot,
+.app-shell .selected-finding-title .signal-dot,
+.app-shell .evidence-thumb .signal-dot,
+.app-shell .status-value-with-dot .agent-state-dot {
+  margin-top: 0 !important;
+}
+
+.app-shell .agent-state-dot.active {
+  background: #00c853 !important;
+}
+
+.app-shell .agent-state-dot.inactive {
+  background: #ff1744 !important;
+}
+
+.app-shell .signal-weak,
+.app-shell .severity-dot.severity-low {
+  background: #ffcc00 !important;
+}
+
+.app-shell .signal-warning,
+.app-shell .severity-dot.severity-high,
+.app-shell .severity-dot.severity-medium {
+  background: #ff7a00 !important;
+}
+
+.app-shell .signal-danger,
+.app-shell .severity-dot.severity-critical {
+  background: #ff2d55 !important;
+}
+
+/* Audit action polish. */
+.app-shell .app-brand {
+  gap: 0 !important;
+  padding-left: 0 !important;
+}
+
+.app-shell .app-brand .brand-mark {
+  display: none !important;
+}
+
+.app-shell .audit-action-buttons button,
+.app-shell .audit-action-buttons a {
+  font-family: var(--linear-font) !important;
+}
+
+.app-shell .audit-action-buttons button .linear-icon,
+.app-shell .audit-action-buttons a .linear-icon {
+  background: currentColor !important;
+  color: var(--linear-muted) !important;
+  height: 14px !important;
+  width: 14px !important;
+}
+
+.app-shell .github-export-button,
+.app-shell button.github-export-button,
+.app-shell a.github-export-button {
+  font-family: var(--linear-font) !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  letter-spacing: 0 !important;
+}
+
+.app-shell .github-export-button .linear-icon,
+.app-shell button.github-export-button .linear-icon,
+.app-shell a.github-export-button .linear-icon {
+  background: currentColor !important;
+  color: #ffffff !important;
+  height: 14px !important;
+  opacity: 1 !important;
+  width: 14px !important;
+}
+
+.app-shell .github-export-button span {
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  font-family: var(--linear-font) !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+  line-height: 18px !important;
+  padding: 0 7px !important;
+}
+
+/* App control polish: comfortable checkboxes and Linear-style dropdowns. */
+.app-shell input[type="checkbox"] {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  align-self: center !important;
+  background: #ffffff !important;
+  border: 1px solid #c8ccd2 !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  display: inline-grid !important;
+  flex: 0 0 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+  place-content: center !important;
+  position: relative !important;
+  width: 16px !important;
+}
+
+.app-shell input[type="checkbox"]:hover {
+  border-color: #9ca3af !important;
+}
+
+.app-shell input[type="checkbox"]:focus-visible {
+  border-color: var(--linear-accent) !important;
+  outline: 3px solid rgba(94, 106, 210, 0.18) !important;
+  outline-offset: 1px !important;
+}
+
+.app-shell input[type="checkbox"]:checked {
+  background: #1a7f37 !important;
+  border-color: #1a7f37 !important;
+}
+
+.app-shell input[type="checkbox"]:checked::after {
+  border: solid #ffffff !important;
+  border-width: 0 2px 2px 0 !important;
+  content: "" !important;
+  display: block !important;
+  height: 8px !important;
+  left: auto !important;
+  margin-top: -1px !important;
+  position: static !important;
+  top: auto !important;
+  transform: rotate(45deg) !important;
+  width: 4px !important;
+}
+
+.app-shell .finding-select,
+.app-shell .github-issue-check,
+.app-shell .github-export-form .checkbox-line {
+  cursor: pointer !important;
+}
+
+.app-shell .finding-select {
+  align-items: center !important;
+  align-self: stretch !important;
+  display: flex !important;
+  justify-content: center !important;
+  margin: -10px 0 !important;
+  min-height: 48px !important;
+  padding: 0 10px 0 2px !important;
+}
+
+.app-shell .finding-feed-card {
+  cursor: pointer !important;
+}
+
+.app-shell .finding-feed-card .finding-select input[type="checkbox"] {
+  pointer-events: auto !important;
+}
+
+.app-shell .github-export-form .checkbox-line {
+  align-items: center !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  gap: 10px !important;
+  min-height: 38px !important;
+  padding: 0 10px !important;
+}
+
+.app-shell select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-color: #ffffff !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #6b7280 50%),
+    linear-gradient(135deg, #6b7280 50%, transparent 50%) !important;
+  background-position:
+    calc(100% - 16px) 50%,
+    calc(100% - 11px) 50% !important;
+  background-repeat: no-repeat !important;
+  background-size: 5px 5px, 5px 5px !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px !important;
+  color: var(--linear-text) !important;
+  cursor: pointer !important;
+  font: 500 13px/1.4 var(--linear-font) !important;
+  min-height: 34px !important;
+  padding: 0 34px 0 11px !important;
+}
+
+.app-shell select:hover {
+  border-color: #c5cad3 !important;
+}
+
+.app-shell select:focus,
+.app-shell select:focus-visible {
+  border-color: var(--linear-accent) !important;
+  outline: 3px solid rgba(94, 106, 210, 0.16) !important;
+  outline-offset: 0 !important;
+}
+
+.app-shell .github-export-form select {
+  min-height: 38px !important;
+  width: 100% !important;
+}
+
+.app-shell .app-select-field {
+  display: grid !important;
+  gap: 6px !important;
+  position: relative !important;
+}
+
+.app-shell .app-select-label {
+  color: var(--linear-text-2) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+}
+
+.app-shell .app-select-trigger {
+  align-items: center !important;
+  background: #ffffff !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px !important;
+  color: var(--linear-text) !important;
+  display: flex !important;
+  font: 500 13px/1.4 var(--linear-font) !important;
+  height: 38px !important;
+  justify-content: space-between !important;
+  min-width: 0 !important;
+  padding: 0 11px !important;
+  text-align: left !important;
+  width: 100% !important;
+}
+
+.app-shell .app-select-trigger:hover {
+  border-color: #c5cad3 !important;
+}
+
+.app-shell .app-select-trigger:focus-visible,
+.app-shell .app-select-trigger[aria-expanded="true"] {
+  border-color: var(--linear-accent) !important;
+  outline: 3px solid rgba(94, 106, 210, 0.16) !important;
+}
+
+.app-shell .app-select-trigger span:first-child {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.app-shell .app-select-chevron {
+  border: solid #6b7280 !important;
+  border-width: 0 1.5px 1.5px 0 !important;
+  display: inline-block !important;
+  flex: 0 0 auto !important;
+  height: 6px !important;
+  margin-left: 10px !important;
+  transform: rotate(45deg) translateY(-1px) !important;
+  width: 6px !important;
+}
+
+.app-shell .app-select-menu {
+  background: #ffffff !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 28px rgba(31, 35, 40, 0.14) !important;
+  display: grid !important;
+  left: 0 !important;
+  max-height: 230px !important;
+  overflow: auto !important;
+  padding: 4px !important;
+  position: absolute !important;
+  right: 0 !important;
+  top: calc(100% + 6px) !important;
+  z-index: 80 !important;
+}
+
+.app-shell .app-select-menu button {
+  align-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  color: var(--linear-text) !important;
+  display: flex !important;
+  font: 500 13px/1.4 var(--linear-font) !important;
+  height: 32px !important;
+  justify-content: flex-start !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  padding: 0 9px !important;
+  text-align: left !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  width: 100% !important;
+}
+
+.app-shell .app-select-menu button:hover,
+.app-shell .app-select-menu button:focus-visible {
+  background: #f0f1f5 !important;
+  outline: 0 !important;
+}
+
+.app-shell .app-select-menu button.selected {
+  background: #eef0ff !important;
+  color: var(--linear-accent) !important;
+}
+
+/* Settings account and plan sections. */
+.app-shell .settings-account-grid {
+  display: grid !important;
+  gap: 12px !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.app-shell .settings-detail-list {
+  display: grid !important;
+  gap: 0 !important;
+  margin: 0 !important;
+}
+
+.app-shell .settings-detail-list div {
+  align-items: center !important;
+  border-top: 1px solid var(--linear-border) !important;
+  display: grid !important;
+  gap: 14px !important;
+  grid-template-columns: minmax(92px, 0.45fr) minmax(0, 1fr) !important;
+  min-height: 38px !important;
+  padding: 8px 0 !important;
+}
+
+.app-shell .settings-detail-list div:first-child {
+  border-top: 0 !important;
+}
+
+.app-shell .settings-detail-list dt {
+  color: var(--linear-muted) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+.app-shell .settings-detail-list dd {
+  color: var(--linear-text) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-align: right !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.app-shell .settings-note {
+  color: var(--linear-muted) !important;
+  font-size: 12px !important;
+  line-height: 1.55 !important;
+  margin: 12px 0 !important;
+}
+
+.app-shell .settings-plan-grid {
+  display: grid !important;
+  gap: 12px !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.app-shell .settings-plan-card {
+  background: #ffffff !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 10px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  min-height: 100% !important;
+  padding: 16px !important;
+}
+
+.app-shell .settings-plan-card.current {
+  border-color: rgba(94, 106, 210, 0.42) !important;
+  box-shadow: 0 0 0 1px rgba(94, 106, 210, 0.12) !important;
+}
+
+.app-shell .settings-plan-card-head {
+  align-items: start !important;
+  display: flex !important;
+  gap: 10px !important;
+  justify-content: space-between !important;
+}
+
+.app-shell .settings-plan-card h3 {
+  color: var(--linear-text) !important;
+  font-size: 16px !important;
+  line-height: 1.25 !important;
+  margin: 0 !important;
+}
+
+.app-shell .settings-plan-card-head p {
+  color: var(--linear-muted) !important;
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+  margin: 5px 0 0 !important;
+}
+
+.app-shell .settings-plan-card-head > span {
+  background: #eef0ff !important;
+  border: 1px solid rgba(94, 106, 210, 0.22) !important;
+  border-radius: 999px !important;
+  color: var(--linear-accent) !important;
+  flex: 0 0 auto !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+  line-height: 22px !important;
+  padding: 0 9px !important;
+}
+
+.app-shell .settings-plan-price {
+  color: var(--linear-text) !important;
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.1 !important;
+}
+
+.app-shell .settings-plan-price span {
+  color: var(--linear-muted) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  margin-left: 3px !important;
+}
+
+.app-shell .settings-plan-card ul {
+  display: grid !important;
+  gap: 8px !important;
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.app-shell .settings-plan-card li {
+  align-items: center !important;
+  color: var(--linear-text-2) !important;
+  display: flex !important;
+  font-size: 12px !important;
+  gap: 8px !important;
+  line-height: 1.35 !important;
+}
+
+.app-shell .settings-plan-card li .linear-icon {
+  background: currentColor !important;
+  color: #1a7f37 !important;
+  flex: 0 0 14px !important;
+  height: 14px !important;
+  width: 14px !important;
+}
+
+/* New audit modal repair and security guidance. */
+.app-shell .new-audit-modal {
+  background: #ffffff !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 12px !important;
+  color: var(--linear-text) !important;
+  max-width: 720px !important;
+  overflow: hidden !important;
+  width: min(720px, calc(100vw - 32px)) !important;
+}
+
+.app-shell .new-audit-modal header,
+.app-shell .new-audit-modal footer {
+  background: #ffffff !important;
+  border-color: var(--linear-border) !important;
+  padding: 18px 22px !important;
+}
+
+.app-shell .new-audit-modal header h2 {
+  color: var(--linear-text) !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+}
+
+.app-shell .modal-steps {
+  gap: 10px !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  padding: 18px 22px 10px !important;
+}
+
+.app-shell .modal-steps span {
+  align-items: center !important;
+  background: #f0f1f4 !important;
+  border: 1px solid transparent !important;
+  border-radius: 999px !important;
+  color: var(--linear-muted) !important;
+  display: flex !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+  gap: 7px !important;
+  min-height: 30px !important;
+  overflow: visible !important;
+  padding: 0 10px !important;
+  text-indent: 0 !important;
+}
+
+.app-shell .modal-steps span b {
+  align-items: center !important;
+  background: #ffffff !important;
+  border-radius: 999px !important;
+  color: inherit !important;
+  display: inline-flex !important;
+  font-size: 11px !important;
+  height: 18px !important;
+  justify-content: center !important;
+  width: 18px !important;
+}
+
+.app-shell .modal-steps span.active,
+.app-shell .modal-steps span.done {
+  background: var(--linear-accent) !important;
+  border-color: var(--linear-accent) !important;
+  color: #ffffff !important;
+}
+
+.app-shell .modal-help-card {
+  align-items: flex-start !important;
+  background: #f6f7fb !important;
+  border: 1px solid #dde0f4 !important;
+  border-radius: 10px !important;
+  display: grid !important;
+  gap: 12px !important;
+  grid-template-columns: 18px minmax(0, 1fr) !important;
+  margin: 4px 22px 0 !important;
+  padding: 13px 14px !important;
+}
+
+.app-shell .modal-help-card .linear-icon {
+  color: var(--linear-accent) !important;
+  height: 18px !important;
+  margin-top: 1px !important;
+  width: 18px !important;
+}
+
+.app-shell .modal-help-card strong {
+  color: var(--linear-text) !important;
+  display: block !important;
+  font-size: 13px !important;
+  margin-bottom: 3px !important;
+}
+
+.app-shell .modal-help-card p,
+.app-shell .modal-field-help {
+  color: var(--linear-muted) !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  margin: 0 !important;
+}
+
+.app-shell .modal-step {
+  gap: 14px !important;
+  min-height: 260px !important;
+  padding: 18px 22px 22px !important;
+}
+
+.app-shell .big-input {
+  background: #ffffff !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 10px !important;
+  min-height: 54px !important;
+  padding: 0 14px !important;
+}
+
+.app-shell .big-input:focus-within {
+  border-color: var(--linear-accent) !important;
+  outline: 3px solid rgba(94, 106, 210, 0.16) !important;
+}
+
+.app-shell .big-input input,
+.app-shell .temporary-access-box input,
+.app-shell .modal-step textarea {
+  background: #ffffff !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px !important;
+  color: var(--linear-text) !important;
+  font: 500 13px/1.4 var(--linear-font) !important;
+  min-height: 40px !important;
+  width: 100% !important;
+}
+
+.app-shell .big-input input {
+  border: 0 !important;
+  font-size: 14px !important;
+  outline: 0 !important;
+}
+
+.app-shell .modal-choice-grid button,
+.app-shell .scope-list button {
+  background: #ffffff !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 10px !important;
+  min-height: 86px !important;
+}
+
+.app-shell .modal-choice-grid button.selected,
+.app-shell .scope-list button.selected {
+  background: #f3f4ff !important;
+  border-color: rgba(94, 106, 210, 0.5) !important;
+}
+
+.app-shell .temporary-access-box {
+  background: #f7faf8 !important;
+  border: 1px solid #cfe8d5 !important;
+  border-radius: 10px !important;
+  gap: 10px !important;
+  padding: 14px !important;
+}
+
+.app-shell .temporary-access-box p:first-child {
+  color: #1a7f37 !important;
+  font-weight: 650 !important;
+}
+
+.app-shell .launch-review {
+  align-content: start !important;
+  justify-items: stretch !important;
+  text-align: left !important;
+}
+
+.app-shell .launch-review > .linear-icon {
+  color: var(--linear-accent) !important;
+  height: 22px !important;
+  width: 22px !important;
+}
+
+.app-shell .launch-review h3 {
+  font-size: 20px !important;
+}
+
+.app-shell .launch-review dl div {
+  background: #f7f8fa !important;
+  border: 1px solid var(--linear-border) !important;
+  border-radius: 8px !important;
+  grid-template-columns: 120px minmax(0, 1fr) !important;
+  padding: 10px 12px !important;
+}
+
+.app-shell .github-permission-note {
+  align-items: flex-start !important;
+  background: #f6f7fb !important;
+  border: 1px solid #dde0f4 !important;
+  border-radius: 9px !important;
+  display: grid !important;
+  gap: 10px !important;
+  grid-template-columns: 16px minmax(0, 1fr) !important;
+  margin-top: 12px !important;
+  padding: 11px 12px !important;
+}
+
+.app-shell .github-permission-note .linear-icon {
+  color: var(--linear-accent) !important;
+}
+
+.app-shell .github-permission-note p {
+  color: var(--linear-muted) !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 1050px) {
+  .app-shell .settings-account-grid,
+  .app-shell .settings-plan-grid {
+    grid-template-columns: 1fr !important;
   }
 }

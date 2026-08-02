@@ -247,9 +247,30 @@ export async function syncGitHubRepositories(input: {
   });
 }
 
+export async function getActiveGitHubConnectionByInstallation(installationId: string) {
+  return prisma.gitHubConnection.findFirst({
+    where: {
+      installationId,
+      revokedAt: null
+    },
+    select: {
+      id: true,
+      workspaceId: true,
+      userId: true
+    }
+  });
+}
+
 export async function markGitHubInstallationRevoked(installationId: string) {
   return prisma.gitHubConnection.updateMany({
     where: { installationId },
+    data: { revokedAt: new Date() }
+  });
+}
+
+export async function disconnectGitHubConnectionsForWorkspace(workspaceId: string) {
+  return prisma.gitHubConnection.updateMany({
+    where: { workspaceId, revokedAt: null },
     data: { revokedAt: new Date() }
   });
 }

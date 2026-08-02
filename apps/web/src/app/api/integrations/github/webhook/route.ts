@@ -1,5 +1,11 @@
 import { readRuntimeConfig } from "@ai-swarm-qa/config";
-import { getDevelopmentActor, markGitHubInstallationRevoked, recordGitHubWebhookDelivery, syncGitHubRepositories, upsertGitHubInstallation } from "@ai-swarm-qa/database";
+import {
+  getActiveGitHubConnectionByInstallation,
+  markGitHubInstallationRevoked,
+  recordGitHubWebhookDelivery,
+  syncGitHubRepositories,
+  upsertGitHubInstallation
+} from "@ai-swarm-qa/database";
 import { createGitHubProvider, verifyGitHubWebhookSignature } from "@ai-swarm-qa/github";
 import { jsonError, jsonErrorFromUnknown } from "../../../errors";
 
@@ -65,10 +71,13 @@ export async function POST(request: Request) {
       }
       const repositories = await provider.listRepositories(installationId);
       const account = payload.installation?.account;
-      const { user, organization } = await getDevelopmentActor();
+      const existingConnection = await getActiveGitHubConnectionByInstallation(installationId);
+      if (!existingConnection) {
+        return Response.json({ ok: true, ignored: "unknown_installation" });
+      }
       const connection = await upsertGitHubInstallation({
-        workspaceId: organization.id,
-        userId: user.id,
+        workspaceId: existingConnection.workspaceId,
+        userId: existingConnection.userId,
         installationId,
         githubAccountId: account?.id ? String(account.id) : installationId,
         githubLogin: account?.login ?? repositories[0]?.accountLogin ?? "unknown",

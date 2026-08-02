@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, CheckCircle2, FileSearch, LockKeyhole, Play, ShieldCheck, UserRound } from "lucide-react";
-import { BrandIcon } from "@/components/BrandIcons";
+import { LinearIcon, type LinearIconName } from "@/components/BrandIcons";
 
 type Environment = "production" | "staging" | "preview";
 type AccessMode = "public" | "temporary-account" | "guided-instructions" | "credentials-later";
@@ -10,11 +9,11 @@ type AuditScope = "quick" | "full" | "auth" | "checkout" | "accessibility" | "mo
 
 const steps = ["Target", "Access", "Scope", "Safety", "Review"] as const;
 
-const accessModes: Array<{ id: AccessMode; title: string; copy: string; icon: "browser" | "private" | "interaction" | "evidence" }> = [
-  { id: "public", title: "Public website", copy: "Agents inspect pages that do not require sign in.", icon: "browser" },
-  { id: "temporary-account", title: "Temporary test account", copy: "Use a disposable test login so agents can inspect authenticated flows.", icon: "private" },
-  { id: "guided-instructions", title: "Guided access instructions", copy: "Tell agents how to enter a safe flow without storing credentials yet.", icon: "interaction" },
-  { id: "credentials-later", title: "No credentials yet", copy: "Save the setup intent and run a public audit first.", icon: "evidence" }
+const accessModes: Array<{ id: AccessMode; title: string; copy: string; icon: LinearIconName }> = [
+  { id: "public", title: "Public website", copy: "Agents inspect pages that do not require sign in.", icon: "views" },
+  { id: "temporary-account", title: "Temporary test account", copy: "Use a disposable test login so agents can inspect authenticated flows.", icon: "inbox" },
+  { id: "guided-instructions", title: "Guided access instructions", copy: "Tell agents how to enter a safe flow without storing credentials yet.", icon: "issues" },
+  { id: "credentials-later", title: "No credentials yet", copy: "Save the setup intent and run a public audit first.", icon: "projects" }
 ];
 
 const scopes: Array<{ id: AuditScope; title: string; copy: string; auditMode: "preview" | "standard" }> = [
@@ -44,7 +43,6 @@ export function AuditForm() {
   const [accessMode, setAccessMode] = useState<AccessMode>("public");
   const [loginUrl, setLoginUrl] = useState("");
   const [testEmail, setTestEmail] = useState("");
-  const [testPassword, setTestPassword] = useState("");
   const [accessNotes, setAccessNotes] = useState("");
   const [scope, setScope] = useState<AuditScope>("full");
   const [customInstructions, setCustomInstructions] = useState("");
@@ -56,10 +54,10 @@ export function AuditForm() {
   const selectedAccess = accessModes.find((item) => item.id === accessMode) ?? accessModes[0]!;
   const canContinue = useMemo(() => {
     if (step === 0) return url.trim().length > 0;
-    if (step === 1 && accessMode === "temporary-account") return loginUrl.trim().length > 0 && testEmail.trim().length > 0 && testPassword.trim().length >= 8;
+    if (step === 1 && accessMode === "temporary-account") return loginUrl.trim().length > 0 && testEmail.trim().length > 0;
     if (step === 2 && scope === "custom") return customInstructions.trim().length > 0;
     return true;
-  }, [accessMode, customInstructions, loginUrl, scope, step, testEmail, testPassword, url]);
+  }, [accessMode, customInstructions, loginUrl, scope, step, testEmail, url]);
 
   function toggleSafety(rule: string) {
     setSafetyRules((current) => (current.includes(rule) ? current.filter((item) => item !== rule) : [...current, rule]));
@@ -81,6 +79,8 @@ export function AuditForm() {
             environment,
             accessMode,
             auditScope: scope,
+            loginUrl: loginUrl || undefined,
+            testAccount: testEmail || undefined,
             customInstructions: buildInstructionSummary(),
             safetyRules
           }
@@ -105,7 +105,7 @@ export function AuditForm() {
     const parts = [
       selectedScope.title,
       selectedAccess.title,
-      accessMode === "temporary-account" ? `Login URL: ${loginUrl}. Test account: ${testEmail}.` : null,
+      accessMode === "temporary-account" ? "Temporary test access was noted. Passwords are not collected or stored by AISwarmQA." : null,
       accessNotes ? `Access notes: ${accessNotes}` : null,
       customInstructions ? `Custom instructions: ${customInstructions}` : null
     ].filter(Boolean);
@@ -138,7 +138,7 @@ export function AuditForm() {
         <div className="wizard-panel">
           {step === 0 ? (
             <div className="wizard-step">
-              <StepHeader icon="browser" title="Target" copy="Start with the site and environment agents should inspect." />
+              <StepHeader icon="views" title="Target" copy="Start with the site and environment agents should inspect." />
               <label>
                 Website URL
                 <input className="input" name="url" onChange={(event) => setUrl(event.target.value)} placeholder="https://your-app.com" type="url" value={url} />
@@ -160,11 +160,11 @@ export function AuditForm() {
 
           {step === 1 ? (
             <div className="wizard-step">
-              <StepHeader icon="private" title="Access mode" copy="Choose how agents should enter the product. Never use a personal account." />
+              <StepHeader icon="inbox" title="Access mode" copy="Choose how agents should enter the product. Never use a personal account." />
               <div className="choice-grid two">
                 {accessModes.map((item) => (
                   <button className={accessMode === item.id ? "choice-card selected" : "choice-card"} key={item.id} onClick={() => setAccessMode(item.id)} type="button">
-                    <BrandIcon name={item.icon} />
+                    <LinearIcon name={item.icon} />
                     <strong>{item.title}</strong>
                     <span>{item.copy}</span>
                   </button>
@@ -173,7 +173,7 @@ export function AuditForm() {
               {accessMode === "temporary-account" ? (
                 <div className="credential-panel">
                   <p className="safe-note">
-                    <ShieldCheck aria-hidden="true" size={18} /> Use a temporary test account only. Do not enter personal, admin, or customer credentials.
+                    AISwarmQA does not collect or store passwords in this flow. Use safe access notes only.
                   </p>
                   <label>
                     Login URL
@@ -181,12 +181,8 @@ export function AuditForm() {
                   </label>
                   <div className="split-fields">
                     <label>
-                      Test email
-                      <input className="input" onChange={(event) => setTestEmail(event.target.value)} placeholder="qa-test@yourcompany.com" type="email" value={testEmail} />
-                    </label>
-                    <label>
-                      Test password
-                      <input className="input" onChange={(event) => setTestPassword(event.target.value)} placeholder="8+ characters" type="password" value={testPassword} />
+                      Test account email or username
+                      <input className="input" onChange={(event) => setTestEmail(event.target.value)} placeholder="qa-test@yourcompany.com" value={testEmail} />
                     </label>
                   </div>
                 </div>
@@ -200,7 +196,7 @@ export function AuditForm() {
 
           {step === 2 ? (
             <div className="wizard-step">
-              <StepHeader icon="bug" title="Audit scope" copy="Pick the mission type that best matches what users need to trust." />
+              <StepHeader icon="issues" title="Audit scope" copy="Pick the mission type that best matches what users need to trust." />
               <div className="choice-grid two">
                 {scopes.map((item) => (
                   <button className={scope === item.id ? "choice-card selected" : "choice-card"} key={item.id} onClick={() => setScope(item.id)} type="button">
@@ -220,12 +216,11 @@ export function AuditForm() {
 
           {step === 3 ? (
             <div className="wizard-step">
-              <StepHeader icon="private" title="Safety rules" copy="Set explicit boundaries before agents interact with the site." />
+              <StepHeader icon="inbox" title="Safety rules" copy="Set explicit boundaries before agents interact with the site." />
               <div className="safety-list">
                 {safetyOptions.map((rule) => (
                   <label className={safetyRules.includes(rule) ? "safety-item selected" : "safety-item"} key={rule}>
                     <input checked={safetyRules.includes(rule)} onChange={() => toggleSafety(rule)} type="checkbox" />
-                    <CheckCircle2 aria-hidden="true" size={18} />
                     {rule}
                   </label>
                 ))}
@@ -235,7 +230,7 @@ export function AuditForm() {
 
           {step === 4 ? (
             <div className="wizard-step">
-              <StepHeader icon="complete" title="Review and start" copy="This is the mission briefing your QA swarm will use." />
+              <StepHeader icon="issues" title="Review and start" copy="This is the mission briefing your QA swarm will use." />
               <div className="review-grid">
                 <ReviewItem label="Target" value={url || "Missing"} />
                 <ReviewItem label="Project" value={projectName || "Auto-created from URL"} />
@@ -257,15 +252,15 @@ export function AuditForm() {
 
           <div className="wizard-actions">
             <button className="ghost-button" disabled={step === 0 || isSubmitting} onClick={() => setStep((current) => Math.max(0, current - 1))} type="button">
-              <ArrowLeft aria-hidden="true" size={18} /> Back
+              Back
             </button>
             {step < steps.length - 1 ? (
               <button className="cta-button" disabled={!canContinue} onClick={() => setStep((current) => Math.min(steps.length - 1, current + 1))} type="button">
-                Continue <ArrowRight aria-hidden="true" size={18} />
+                Continue
               </button>
             ) : (
               <button className="cta-button" disabled={!canContinue || isSubmitting} onClick={() => void submitAudit()} type="button">
-                <Play aria-hidden="true" size={18} /> {isSubmitting ? "Starting audit" : "Start audit"}
+                {isSubmitting ? "Starting audit" : "Start audit"}
               </button>
             )}
           </div>
@@ -275,10 +270,10 @@ export function AuditForm() {
   );
 }
 
-function StepHeader({ icon, title, copy }: { icon: Parameters<typeof BrandIcon>[0]["name"]; title: string; copy: string }) {
+function StepHeader({ icon, title, copy }: { icon: LinearIconName; title: string; copy: string }) {
   return (
     <div className="wizard-step-header">
-      <BrandIcon name={icon} />
+      <LinearIcon name={icon} />
       <div>
         <h2>{title}</h2>
         <p>{copy}</p>
