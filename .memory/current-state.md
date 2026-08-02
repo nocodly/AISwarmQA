@@ -29,6 +29,25 @@ Important product direction:
 - Audit result pages should show top actions first, then findings as compact cards. Clicking a finding should open an issue-like detail view with severity, affected page, reproduction steps, expected vs actual behavior, suggested fix, acceptance criteria, and real evidence.
 - Agents should eventually understand product structure, button destinations, expected flows, design rules, forbidden actions, and visual quality mismatches, not only inspect raw page appearance.
 
+Latest execution-plane product intelligence update:
+
+- A safe public `AuditResearchContext` layer now enriches AI-assisted audit planning.
+- The implementation is AISwarmQA-native TypeScript and does not copy or vendor external Agent Reach code.
+- Research context is built only from the already-sanitized target-page planning snapshot:
+  - page title
+  - meta description
+  - headings
+  - visible buttons
+  - non-password form structure
+  - detected product signals
+  - same-origin routes
+- The planner now receives likely user journeys and priority routes so agents can better understand product workflows before missions are queued.
+- The safety boundary remains unchanged:
+  - same-origin only
+  - no private networks
+  - no source-code, database, server-file, cookie, or credential access
+  - no payment execution, account creation, destructive actions, or stored passwords
+
 Current local working tree status:
 
 - There are uncommitted fixes from a self-audit of the local site.

@@ -644,3 +644,30 @@ New Audit backend workflow pass:
   - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/database typecheck`: PASS.
   - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/queue typecheck`: PASS.
   - `git diff --check`: PASS, with only expected Windows CRLF warnings.
+
+Agent research context planning pass:
+
+- Reviewed `Panniantong/Agent-Reach` as a capability-layer reference and did not copy its code or add its Python dependency tree.
+- Added a safe AISwarmQA-native `AuditResearchContext` contract in `packages/shared`:
+  - source is limited to the public target-page planning snapshot
+  - page title, meta description, headings, detected signals, forms, buttons, and same-origin routes become structured product signals
+  - likely user journeys are inferred for account access, checkout, pricing, search, dashboard/workspace, and forms
+  - priority routes are same-origin only and sanitized before reaching planner input
+  - safety notes explicitly forbid inferring private source-code, database, or server-file access
+- `buildPlannerInput()` now includes `researchContext` for AI-assisted planning, so the planner has clearer workflow context without browser control or extra scraping.
+- Planner prompt `ai-swarm-qa-planner` v1 now tells the model to use `researchContext` only as sanitized public product context.
+- Added shared contract tests that verify:
+  - likely journeys are produced from target-page signals
+  - external routes are not included as priority routes
+  - tokens, email addresses, and password fields are not exposed in research context
+- Updated AI planner test fixtures for the expanded planner input contract.
+- Verification:
+  - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/shared typecheck`: PASS.
+  - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/worker typecheck`: PASS.
+  - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/ai typecheck`: PASS.
+  - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/shared test`: PASS after escalation for Windows sandbox `spawn EPERM`.
+  - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/ai test`: PASS after escalation for Windows sandbox `spawn EPERM`.
+  - `corepack pnpm@10.0.0 typecheck`: PASS after escalation for Windows sandbox `spawn EPERM`.
+  - `corepack pnpm@10.0.0 lint`: PASS after escalation for Windows sandbox `spawn EPERM`.
+  - `corepack pnpm@10.0.0 test`: PASS after escalation for Windows sandbox `spawn EPERM`.
+  - `git diff --check`: PASS, with only expected Windows CRLF warnings.

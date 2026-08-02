@@ -911,6 +911,33 @@ export const planningSnapshotSchema = z.object({
 
 export type PlanningSnapshot = z.infer<typeof planningSnapshotSchema>;
 
+export const auditResearchJourneySchema = z.object({
+  name: z.string().min(1).max(120),
+  reason: z.string().min(1).max(240),
+  routes: z.array(z.string().min(1).max(300)).max(8)
+});
+
+export const auditResearchRouteSchema = z.object({
+  path: z.string().min(1).max(300),
+  label: z.string().min(1).max(120),
+  reason: z.string().min(1).max(180)
+});
+
+export const auditResearchContextSchema = z
+  .object({
+    source: z.literal("public-target-snapshot"),
+    collectedFromUrl: z.string().url(),
+    summary: z.string().max(700),
+    productSignals: z.array(z.string().min(1).max(120)).max(12),
+    likelyUserJourneys: z.array(auditResearchJourneySchema).max(10),
+    priorityRoutes: z.array(auditResearchRouteSchema).max(20),
+    safetyNotes: z.array(z.string().min(1).max(160)).max(8),
+    collectionWarnings: z.array(z.string().min(1).max(160)).max(8)
+  })
+  .strict();
+
+export type AuditResearchContext = z.infer<typeof auditResearchContextSchema>;
+
 export type SnapshotLimits = {
   maxPageTextChars: number;
   maxLinksInContext: number;
@@ -966,6 +993,212 @@ export function sanitizePlanningSnapshot(snapshot: PlanningSnapshot, limits: Sna
           .filter((route): route is string => Boolean(route))
       )
     ].slice(0, limits.maxPriorityRoutes)
+  });
+}
+
+function appendUnique<T>(items: T[], item: T, key: (value: T) => string, maxItems: number): void {
+  const normalizedKey = key(item).toLowerCase();
+  if (items.length >= maxItems || items.some((existing) => key(existing).toLowerCase() === normalizedKey)) {
+    return;
+  }
+  items.push(item);
+}
+
+function routePathFromCandidate(candidate: string | undefined, targetUrl: string): string[] {
+  if (!candidate || !isSameOriginOrRelativeRoute(candidate, targetUrl)) {
+    return [];
+  }
+  const route = toRoutePath(candidate, targetUrl);
+  return route ? [route] : [];
+}
+
+function findRoutesByKeyword(snapshot: PlanningSnapshot, keywords: RegExp[]): string[] {
+  const candidates = [
+    ...snapshot.navigationLinks.map((link) => ({ text: link.text, route: link.url })),
+    ...snapshot.sameOriginRoutes.map((route) => ({ text: route, route }))
+  ];
+  const routes: string[] = [];
+  for (const candidate of candidates) {
+    const text = `${candidate.text} ${candidate.route}`;
+    if (keywords.some((keyword) => keyword.test(text))) {
+      for (const route of routePathFromCandidate(candidate.route, snapshot.targetUrl)) {
+        appendUnique(routes, route, (value) => value, 8);
+      }
+    }
+  }
+  return routes;
+}
+
+function addResearchRoute(routes: AuditResearchContext["priorityRoutes"], snapshot: PlanningSnapshot, input: { route: string; label: string; reason: string }): void {
+  for (const path of routePathFromCandidate(input.route, snapshot.targetUrl)) {
+    appendUnique(
+      routes,
+      {
+        path,
+        label: truncateText(input.label || path, 120),
+        reason: truncateText(input.reason, 180)
+      },
+      (route) => route.path,
+      20
+    );
+  }
+}
+
+export function buildAuditResearchContext(input: {
+  targetUrl: string;
+  snapshot: PlanningSnapshot;
+  missionContext?: AuditMissionContext;
+  maxPriorityRoutes?: number;
+}): AuditResearchContext {
+  const missionContext = sanitizeAuditMissionContext(input.missionContext);
+  const snapshot = sanitizePlanningSnapshot(input.snapshot, {
+    maxPageTextChars: 1600,
+    maxLinksInContext: 30,
+    maxFormsInContext: 12,
+    maxPriorityRoutes: input.maxPriorityRoutes ?? 20
+  });
+  const productSignals: string[] = [];
+  const journeys: AuditResearchContext["likelyUserJourneys"] = [];
+  const priorityRoutes: AuditResearchContext["priorityRoutes"] = [];
+  const warnings: string[] = [];
+
+  if (snapshot.pageTitle) {
+    appendUnique(productSignals, `Page title: ${truncateText(snapshot.pageTitle, 100)}`, (value) => value, 12);
+  }
+  if (snapshot.metaDescription) {
+    appendUnique(productSignals, `Meta description: ${truncateText(snapshot.metaDescription, 100)}`, (value) => value, 12);
+  }
+  const primaryHeading = snapshot.headings.find((heading) => heading.level <= 2 && heading.text);
+  if (primaryHeading) {
+    appendUnique(productSignals, `Primary heading: ${truncateText(primaryHeading.text, 100)}`, (value) => value, 12);
+  }
+
+  const signalLabels: Array<[keyof PlanningSnapshot["detectedSignals"], string]> = [
+    ["hasLogin", "Authentication"],
+    ["hasSignup", "Sign-up"],
+    ["hasCheckout", "Checkout"],
+    ["hasPricing", "Pricing"],
+    ["hasSearch", "Search"],
+    ["hasDashboard", "Dashboard or workspace"],
+    ["hasContactForm", "Contact or lead form"],
+    ["hasFileUpload", "File upload"]
+  ];
+  for (const [key, label] of signalLabels) {
+    if (snapshot.detectedSignals[key]) {
+      appendUnique(productSignals, `${label} signal detected`, (value) => value, 12);
+    }
+  }
+  if (snapshot.forms.length > 0) {
+    appendUnique(productSignals, `${snapshot.forms.length} form area(s) detected`, (value) => value, 12);
+  }
+  if (snapshot.visibleButtons.length > 0) {
+    appendUnique(productSignals, `${snapshot.visibleButtons.length} interactive control(s) visible`, (value) => value, 12);
+  }
+
+  for (const link of snapshot.navigationLinks) {
+    addResearchRoute(priorityRoutes, snapshot, {
+      route: link.url,
+      label: link.text || "Navigation route",
+      reason: "Visible navigation route from the target page."
+    });
+  }
+  for (const route of snapshot.sameOriginRoutes.slice(0, input.maxPriorityRoutes ?? 20)) {
+    addResearchRoute(priorityRoutes, snapshot, {
+      route,
+      label: route,
+      reason: "Same-origin route discovered on the target page."
+    });
+  }
+
+  const addJourney = (journey: AuditResearchContext["likelyUserJourneys"][number]) =>
+    appendUnique(journeys, journey, (value) => value.name, 10);
+  const authRoutes = [
+    ...routePathFromCandidate(missionContext.loginUrl, snapshot.targetUrl),
+    ...findRoutesByKeyword(snapshot, [/log ?in/i, /sign ?in/i, /account/i, /auth/i])
+  ];
+  if (snapshot.detectedSignals.hasLogin || snapshot.detectedSignals.hasSignup || missionContext.accessMode !== "public") {
+    addJourney({
+      name: "Account access",
+      reason: "The page or audit setup includes login, sign-up, or guided access signals.",
+      routes: authRoutes.length > 0 ? authRoutes.slice(0, 8) : ["/"]
+    });
+  }
+  if (snapshot.detectedSignals.hasCheckout || missionContext.auditScope === "checkout") {
+    addJourney({
+      name: "Checkout or order flow",
+      reason: "Checkout, cart, or order signals should be tested without executing payment.",
+      routes: findRoutesByKeyword(snapshot, [/checkout/i, /cart/i, /order/i, /pricing/i]).slice(0, 8)
+    });
+  }
+  if (snapshot.detectedSignals.hasPricing) {
+    addJourney({
+      name: "Pricing and plan review",
+      reason: "Pricing or plan content is a core conversion route.",
+      routes: findRoutesByKeyword(snapshot, [/pricing/i, /price/i, /plan/i]).slice(0, 8)
+    });
+  }
+  if (snapshot.detectedSignals.hasSearch) {
+    addJourney({
+      name: "Search workflow",
+      reason: "Search controls are visible and should be checked for usable results or errors.",
+      routes: findRoutesByKeyword(snapshot, [/search/i]).slice(0, 8)
+    });
+  }
+  if (snapshot.detectedSignals.hasDashboard) {
+    addJourney({
+      name: "Dashboard or workspace workflow",
+      reason: "Workspace/dashboard language suggests authenticated operational screens.",
+      routes: findRoutesByKeyword(snapshot, [/dashboard/i, /workspace/i, /app/i]).slice(0, 8)
+    });
+  }
+  if (snapshot.detectedSignals.hasContactForm || snapshot.forms.length > 0) {
+    addJourney({
+      name: "Form completion safety",
+      reason: "Forms should be inspected for labels, validation, and non-destructive behavior.",
+      routes: findRoutesByKeyword(snapshot, [/contact/i, /newsletter/i, /subscribe/i, /form/i]).slice(0, 8)
+    });
+  }
+  if (missionContext.auditScope !== "full") {
+    addJourney({
+      name: `${missionContext.auditScope} audit focus`,
+      reason: "The user selected a narrower audit scope in the setup flow.",
+      routes: ["/"]
+    });
+  }
+
+  if (snapshot.consoleErrorCount > 0) {
+    warnings.push(`${snapshot.consoleErrorCount} console error(s) were observed during context collection.`);
+  }
+  if (snapshot.failedRequestCount > 0) {
+    warnings.push(`${snapshot.failedRequestCount} failed request(s) were observed during context collection.`);
+  }
+  if (snapshot.navigationLinks.length === 0 && snapshot.sameOriginRoutes.length <= 1) {
+    warnings.push("Few same-origin routes were visible, so route coverage may be limited.");
+  }
+
+  const summaryParts = [
+    snapshot.pageTitle ? `Target appears as "${snapshot.pageTitle}".` : "Target page title was unavailable.",
+    snapshot.metaDescription ? snapshot.metaDescription : null,
+    productSignals.length > 0 ? `Signals: ${productSignals.slice(0, 6).join("; ")}.` : null
+  ].filter((part): part is string => Boolean(part));
+
+  return auditResearchContextSchema.parse({
+    source: "public-target-snapshot",
+    collectedFromUrl: sanitizeUrlForPlanning(snapshot.finalUrl, input.targetUrl) ?? sanitizeUrlForPlanning(input.targetUrl) ?? input.targetUrl,
+    summary: truncateText(summaryParts.join(" "), 700),
+    productSignals,
+    likelyUserJourneys: journeys.map((journey) => ({
+      ...journey,
+      reason: truncateText(journey.reason, 240),
+      routes: journey.routes.length > 0 ? journey.routes : ["/"]
+    })),
+    priorityRoutes: priorityRoutes.slice(0, input.maxPriorityRoutes ?? 20),
+    safetyNotes: [
+      "Use only public target-page context and sanitized user setup notes.",
+      "Do not infer private source-code, database, or server-file access.",
+      "Keep all actions same-origin, non-destructive, and free of payment execution."
+    ],
+    collectionWarnings: warnings.map((warning) => truncateText(warning, 160))
   });
 }
 
@@ -1122,6 +1355,7 @@ export const plannerInputSchema = z.object({
     })
   ),
   snapshot: planningSnapshotSchema,
+  researchContext: auditResearchContextSchema,
   availableMissionTypes: z.array(plannerMissionInfoSchema),
   constraints: z.object({
     maxProposedMissions: z.number().int().min(0).max(20),
@@ -1222,10 +1456,19 @@ export function buildPlannerInput(input: {
   missionContext?: AuditMissionContext;
   baselineMissions: MissionDefinition[];
   snapshot: PlanningSnapshot;
+  researchContext?: AuditResearchContext;
   maxProposedMissions: number;
   maxPriorityRoutes: number;
 }): PlannerInput {
   const missionContext = sanitizeAuditMissionContext(input.missionContext);
+  const researchContext =
+    input.researchContext ??
+    buildAuditResearchContext({
+      targetUrl: input.targetUrl,
+      snapshot: input.snapshot,
+      missionContext,
+      maxPriorityRoutes: input.maxPriorityRoutes
+    });
   return plannerInputSchema.parse({
     auditId: input.auditId,
     targetUrl: input.targetUrl,
@@ -1238,6 +1481,7 @@ export function buildPlannerInput(input: {
       limits: mission.limits
     })),
     snapshot: input.snapshot,
+    researchContext,
     availableMissionTypes: missionDefinitions.map((mission) => ({
       type: mission.type,
       purpose: mission.objective,

@@ -14,6 +14,7 @@ export const plannerPromptV1: PromptDefinition = {
       "Use only the supported mission types provided by the user.",
       "Preserve all baseline required missions.",
       "Prioritize visible user journeys from the bounded snapshot.",
+      "Use researchContext as sanitized public product context for likely workflows, priority routes, and collection limits.",
       "Respect every limit and safety constraint.",
       "Do not propose destructive behavior, payment execution, account creation, login automation, generated selectors, Playwright code, JavaScript code, or penetration testing.",
       "Do not claim certainty where the snapshot is limited.",

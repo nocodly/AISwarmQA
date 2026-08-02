@@ -10,6 +10,7 @@ import {
   browserAgentProgressFingerprint,
   assertValidSwarmAgentTransition,
   assertValidSwarmRunTransition,
+  buildAuditResearchContext,
   browserSwarmRoleObjective,
   calculateReportScore,
   buildPlannerInput,
@@ -430,6 +431,64 @@ describe("shared contracts", () => {
     expect(snapshot.sameOriginRoutes).toEqual(["/pricing"]);
   });
 
+  it("builds sanitized public research context for planner workflows", () => {
+    const snapshot = sanitizePlanningSnapshot(
+      {
+        targetUrl: "https://example.com/",
+        finalUrl: "https://example.com/?token=secret",
+        pageTitle: "Demo SaaS for qa@example.com",
+        metaDescription: "Manage projects, pricing, and checkout from one workspace.",
+        language: "en",
+        headings: [{ level: 1, text: "Run audits and ship fixes" }],
+        navigationLinks: [
+          { text: "Pricing", url: "https://example.com/pricing?api_key=secret" },
+          { text: "Sign in", url: "https://example.com/login" },
+          { text: "External docs", url: "https://docs.example.net/private" }
+        ],
+        visibleButtons: [{ text: "Start checkout", role: null, ariaLabel: null }],
+        forms: [
+          {
+            action: "https://example.com/login",
+            method: "post",
+            fields: [
+              { type: "email", name: "email", label: "Email", required: true, autocomplete: "email" },
+              { type: "password", name: "password", label: "Password", required: true, autocomplete: null }
+            ]
+          }
+        ],
+        detectedSignals: {
+          hasLogin: true,
+          hasSignup: false,
+          hasCheckout: true,
+          hasPricing: true,
+          hasSearch: false,
+          hasDashboard: true,
+          hasContactForm: false,
+          hasFileUpload: false
+        },
+        sameOriginRoutes: ["https://example.com/pricing?token=secret", "https://example.com/app"],
+        consoleErrorCount: 1,
+        failedRequestCount: 1
+      },
+      { maxPageTextChars: 1000, maxLinksInContext: 10, maxFormsInContext: 10, maxPriorityRoutes: 10 }
+    );
+    const context = buildAuditResearchContext({
+      targetUrl: "https://example.com/",
+      snapshot,
+      missionContext: { accessMode: "guided-instructions", auditScope: "checkout", customInstructions: "Use temp access only.", safetyRules: [] }
+    });
+
+    expect(context.source).toBe("public-target-snapshot");
+    expect(context.likelyUserJourneys.map((journey) => journey.name)).toContain("Checkout or order flow");
+    expect(context.likelyUserJourneys.map((journey) => journey.name)).toContain("Account access");
+    expect(context.priorityRoutes.map((route) => route.path)).toContain("/pricing");
+    expect(context.priorityRoutes.map((route) => route.path)).not.toContain("https://docs.example.net/private");
+    expect(context.collectionWarnings).toHaveLength(2);
+    expect(JSON.stringify(context)).not.toContain("qa@example.com");
+    expect(JSON.stringify(context)).not.toContain("secret");
+    expect(JSON.stringify(context)).not.toContain("Password");
+  });
+
   it("validates planner input and output contracts", () => {
     const baseline = planAuditMissions({ auditId: "audit_1", targetUrl: "http://localhost:4100", mode: "standard" });
     const snapshot = sanitizePlanningSnapshot(
@@ -471,6 +530,8 @@ describe("shared contracts", () => {
     });
     expect(input.availableMissionTypes).toHaveLength(8);
     expect(input.missionContext).toMatchObject({ accessMode: "guided-instructions", auditScope: "auth" });
+    expect(input.researchContext.source).toBe("public-target-snapshot");
+    expect(input.researchContext.productSignals).toContain("Checkout signal detected");
     expect(input.constraints.noStoredPasswords).toBe(true);
     expect(input.baselineMissions.map((mission) => mission.type)).not.toContain("autonomous-browser");
     expect(input.baselineMissions.map((mission) => mission.type)).not.toContain("browser-swarm");

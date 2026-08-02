@@ -57,6 +57,26 @@ function plannerInput(): PlannerInput {
       consoleErrorCount: 1,
       failedRequestCount: 1
     },
+    researchContext: {
+      source: "public-target-snapshot",
+      collectedFromUrl: "http://localhost:4100/",
+      summary: "Target appears as \"Broken Demo Shop\" with checkout and pricing signals.",
+      productSignals: ["Page title: Broken Demo Shop", "Checkout signal detected", "Pricing signal detected"],
+      likelyUserJourneys: [
+        {
+          name: "Checkout or order flow",
+          reason: "Checkout, cart, or order signals should be tested without executing payment.",
+          routes: ["/"]
+        }
+      ],
+      priorityRoutes: [{ path: "/", label: "Home", reason: "Same-origin route discovered on the target page." }],
+      safetyNotes: [
+        "Use only public target-page context and sanitized user setup notes.",
+        "Do not infer private source-code, database, or server-file access.",
+        "Keep all actions same-origin, non-destructive, and free of payment execution."
+      ],
+      collectionWarnings: ["1 console error(s) were observed during context collection.", "1 failed request(s) were observed during context collection."]
+    },
     availableMissionTypes: [
       { type: "interaction-tester", purpose: "Safe interactions", capabilities: ["safe clicks"], restrictions: ["no payments"] },
       { type: "form-tester", purpose: "Forms", capabilities: ["inspect fields"], restrictions: ["no submit"] }
