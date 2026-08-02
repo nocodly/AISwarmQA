@@ -682,3 +682,17 @@ Agent research context planning pass:
   - `GET /api/health`: PASS, returned 200.
   - `GET /api/health/database`: PASS, returned 200.
   - Page probes returned 200 for `/dashboard`, `/audits`, `/findings`, `/github`, and `/settings`.
+
+Railway worker build-order fix:
+
+- The owner reported a Railway build failure email after the latest pushes.
+- Railway CLI is installed but not authenticated in this Codex session, so deployment logs could not be read directly.
+- Production web and database health were still passing, which suggests the previous successful deployment remained live while a new Railway build failed.
+- Inspected `Dockerfile.worker` and found it still generated Prisma Client before building `@ai-swarm-qa/config`.
+- This differed from the root CI `db:generate` script, which already builds `@ai-swarm-qa/config` first.
+- Fixed `Dockerfile.worker` to run `pnpm --filter @ai-swarm-qa/config build` before `pnpm --filter @ai-swarm-qa/database db:generate`.
+- Verification:
+  - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/config build`: PASS.
+  - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/database db:generate`: PASS.
+  - `corepack pnpm@10.0.0 --filter @ai-swarm-qa/worker build`: PASS.
+  - `docker build -f Dockerfile.worker -t ai-swarm-qa-worker-build-check .`: PASS.

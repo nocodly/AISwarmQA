@@ -15,6 +15,7 @@ COPY tests/smoke ./tests/smoke
 RUN corepack enable \
   && corepack prepare pnpm@10.0.0 --activate \
   && pnpm install --frozen-lockfile \
+  && pnpm --filter @ai-swarm-qa/config build \
   && pnpm --filter @ai-swarm-qa/database db:generate \
   && pnpm --filter @ai-swarm-qa/worker build
 
